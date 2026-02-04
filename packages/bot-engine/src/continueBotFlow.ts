@@ -360,6 +360,7 @@ const processNonInputBlock = async ({
   } else if (
     reply &&
     (block.type === IntegrationBlockType.HTTP_REQUEST ||
+      block.type === IntegrationBlockType.CUSTOM_CURL ||
       block.type === LogicBlockType.WEBHOOK)
   ) {
     let response: {

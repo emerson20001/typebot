@@ -3,19 +3,19 @@ import { z } from "@typebot.io/zod";
 import { IntegrationBlockType } from "../constants";
 import { HttpMethod, maxTimeout } from "./constants";
 
-const variableForTestSchema = z.object({
+export const variableForTestSchema = z.object({
   id: z.string(),
   variableId: z.string().optional(),
   value: z.string().optional(),
 });
 
-const responseVariableMappingSchema = z.object({
+export const responseVariableMappingSchema = z.object({
   id: z.string(),
   variableId: z.string().optional(),
   bodyPath: z.string().optional(),
 });
 
-const keyValueSchema = z.object({
+export const keyValueSchema = z.object({
   id: z.string(),
   key: z.string().optional(),
   value: z.string().optional(),
@@ -57,7 +57,7 @@ export const httpRequestOptionsV5Schema = z.object({
   proxyCredentialsId: z.string().optional(),
 });
 
-const httpRequestOptionsSchemas = {
+export const httpRequestOptionsSchemas = {
   v5: httpRequestOptionsV5Schema,
   v6: httpRequestOptionsV5Schema.merge(
     z.object({

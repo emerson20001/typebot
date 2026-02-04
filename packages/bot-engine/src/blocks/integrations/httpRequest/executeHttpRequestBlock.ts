@@ -11,6 +11,7 @@ import type {
   HttpResponse,
   KeyValue,
 } from "@typebot.io/blocks-integrations/httpRequest/schema";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import type { MakeComBlock } from "@typebot.io/blocks-integrations/makeCom/schema";
 import type { PabblyConnectBlock } from "@typebot.io/blocks-integrations/pabblyConnect/schema";
 import type { ZapierBlock } from "@typebot.io/blocks-integrations/zapier/schema";
@@ -63,7 +64,12 @@ export const webhookErrorDescription = `Webhook returned an error.`;
 type Params = { disableRequestTimeout?: boolean; timeout?: number };
 
 export const executeHttpRequestBlock = async (
-  block: HttpRequestBlock | ZapierBlock | MakeComBlock | PabblyConnectBlock,
+  block:
+    | HttpRequestBlock
+    | CustomCurlBlock
+    | ZapierBlock
+    | MakeComBlock
+    | PabblyConnectBlock,
   {
     state,
     sessionStore,
@@ -165,14 +171,19 @@ export const parseHttpRequestAttributes = async ({
       h.key?.toLowerCase() === "authorization" &&
       h.value?.toLowerCase()?.includes("basic"),
   );
+  const rawBasicAuthHeaderValue = isDefined(basicAuthHeaderIdx)
+    ? httpRequest.headers?.at(basicAuthHeaderIdx)?.value
+    : undefined;
+  const parsedBasicAuthHeaderValue = rawBasicAuthHeaderValue
+    ? parseVariables(rawBasicAuthHeaderValue, { variables, sessionStore })
+    : undefined;
   const isUsernamePasswordBasicAuth =
     basicAuthHeaderIdx !== -1 &&
     isDefined(basicAuthHeaderIdx) &&
-    httpRequest.headers?.at(basicAuthHeaderIdx)?.value?.includes(":");
+    parsedBasicAuthHeaderValue?.includes(":");
   if (isUsernamePasswordBasicAuth) {
     const [username, password] =
-      httpRequest.headers?.at(basicAuthHeaderIdx)?.value?.slice(6).split(":") ??
-      [];
+      parsedBasicAuthHeaderValue?.slice(6).split(":") ?? [];
     basicAuth.username = username;
     basicAuth.password = password;
     httpRequest.headers?.splice(basicAuthHeaderIdx, 1);
@@ -268,6 +279,18 @@ export const executeHttpRequest = async (
   }
 
   const contentType = headers ? headers["Content-Type"] : undefined;
+  const requestHeaders = { ...(headers ?? {}) };
+  if (
+    (basicAuth?.username || basicAuth?.password) &&
+    !requestHeaders.Authorization
+  ) {
+    const credentials = `${basicAuth?.username ?? ""}:${
+      basicAuth?.password ?? ""
+    }`;
+    requestHeaders.Authorization = `Basic ${Buffer.from(credentials).toString(
+      "base64",
+    )}`;
+  }
 
   const isLongRequest = params.disableRequestTimeout
     ? true
@@ -284,8 +307,7 @@ export const executeHttpRequest = async (
   const baseRequest = {
     url,
     method,
-    headers: headers ?? {},
-    ...(basicAuth ?? {}),
+    headers: requestHeaders,
     fetch: httpRequest.proxyUrl
       ? (input: string | URL | Request, init?: RequestInit) =>
           rebuildFetchWithoutChunkedEncoding(input, {

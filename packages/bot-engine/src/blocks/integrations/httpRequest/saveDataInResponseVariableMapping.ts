@@ -15,6 +15,7 @@ type Props = {
   blockType:
     | LogicBlockType.WEBHOOK
     | IntegrationBlockType.HTTP_REQUEST
+    | IntegrationBlockType.CUSTOM_CURL
     | IntegrationBlockType.ZAPIER
     | IntegrationBlockType.MAKE_COM
     | IntegrationBlockType.PABBLY_CONNECT;
@@ -52,7 +53,11 @@ export const saveDataInResponseVariableMapping = ({
 
   if (responseFromClient) {
     const blockLabel =
-      blockType === LogicBlockType.WEBHOOK ? "Webhook" : "HTTP request";
+      blockType === LogicBlockType.WEBHOOK
+        ? "Webhook"
+        : blockType === IntegrationBlockType.CUSTOM_CURL
+          ? "Custom CURL"
+          : "HTTP request";
     logs.push(
       isError
         ? {

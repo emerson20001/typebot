@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { isHttpRequestBlock } from "@typebot.io/blocks-core/helpers";
 import type { Block } from "@typebot.io/blocks-core/schemas/schema";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import { httpRequestV5Schema } from "@typebot.io/blocks-integrations/httpRequest/schema";
 import {
   executeHttpRequest,
@@ -37,6 +39,12 @@ export const testHttpRequest = authenticatedProcedure
           }),
         )
         .optional(),
+      basicAuth: z
+        .object({
+          username: z.string(),
+          password: z.string(),
+        })
+        .optional(),
     }),
   )
   .output(
@@ -45,7 +53,8 @@ export const testHttpRequest = authenticatedProcedure
       data: z.unknown().optional(),
     }),
   )
-  .mutation(async ({ input: { typebotId, blockId, variables }, ctx }) => {
+  .mutation(
+    async ({ input: { typebotId, blockId, variables, basicAuth }, ctx }) => {
     const typebot = await prisma.typebot.findFirst({
       where: canReadTypebots(typebotId, ctx.user),
       select: {
@@ -76,7 +85,10 @@ export const testHttpRequest = authenticatedProcedure
       .flatMap<Block>((g) => g.blocks)
       .find(byId(blockId));
 
-    if (!block || !isHttpRequestBlock(block))
+    const isCustomCurlBlock = (block: Block): block is CustomCurlBlock =>
+      block.type === IntegrationBlockType.CUSTOM_CURL;
+
+    if (!block || (!isHttpRequestBlock(block) && !isCustomCurlBlock(block)))
       throw new TRPCError({
         code: "NOT_FOUND",
         message: "HTTP request block not found",
@@ -100,6 +112,22 @@ export const testHttpRequest = authenticatedProcedure
         code: "NOT_FOUND",
         message: "Couldn't find webhook",
       });
+
+    const webhookForTest = basicAuth
+      ? {
+          ...webhook,
+          headers: [
+            ...(webhook.headers ?? []).filter(
+              (header) => header.key?.toLowerCase() !== "authorization",
+            ),
+            {
+              id: "basic-auth",
+              key: "Authorization",
+              value: `Basic ${basicAuth.username}:${basicAuth.password}`,
+            },
+          ],
+        }
+      : webhook;
 
     const { group } = getBlockById(blockId, parsedTypebot.groups);
     const linkedTypebots = await fetchLinkedChildTypebots({
@@ -132,7 +160,7 @@ export const testHttpRequest = authenticatedProcedure
     const mockedSessionId = "test-webhook";
     const sessionStore = getSessionStore(mockedSessionId);
     const parsedWebhook = await parseHttpRequestAttributes({
-      httpRequest: webhook,
+      httpRequest: webhookForTest,
       isCustomBody: block.options?.isCustomBody,
       variables: mergedVariables,
       sessionStore,
@@ -151,6 +179,17 @@ export const testHttpRequest = authenticatedProcedure
         code: "INTERNAL_SERVER_ERROR",
         message: "Couldn't parse webhook attributes",
       });
+
+    if (basicAuth) {
+      const encoded = Buffer.from(
+        `${basicAuth.username}:${basicAuth.password}`,
+      ).toString("base64");
+      parsedWebhook.headers = {
+        ...(parsedWebhook.headers ?? {}),
+        Authorization: `Basic ${encoded}`,
+      };
+      parsedWebhook.basicAuth = {};
+    }
 
     const { response } = await executeHttpRequest(parsedWebhook, {
       timeout: block.options?.timeout,

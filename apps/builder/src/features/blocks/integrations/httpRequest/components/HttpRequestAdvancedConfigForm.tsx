@@ -39,6 +39,12 @@ type Props = {
   onHttpRequestChange: (httpRequest: HttpRequest) => void;
   onOptionsChange: (options: HttpRequestBlock["options"]) => void;
   onNewTestResponse?: () => void;
+  getTestRequestOverrides?: () => { basicAuth?: { username: string; password: string } } | undefined;
+  renderBodyParameters?: () => JSX.Element;
+  hideCustomBodyToggle?: boolean;
+  hideBodyEditor?: boolean;
+  hideVariablesForTest?: boolean;
+  renderAdvancedParameters?: () => JSX.Element;
 };
 
 export const HttpRequestAdvancedConfigForm = ({
@@ -48,6 +54,12 @@ export const HttpRequestAdvancedConfigForm = ({
   onHttpRequestChange,
   onOptionsChange,
   onNewTestResponse,
+  getTestRequestOverrides,
+  renderBodyParameters,
+  hideCustomBodyToggle,
+  hideBodyEditor,
+  hideVariablesForTest,
+  renderAdvancedParameters,
 }: Props) => {
   const { typebot, save } = useTypebot();
   const [isTestResponseLoading, setIsTestResponseLoading] = useState(false);
@@ -84,6 +96,7 @@ export const HttpRequestAdvancedConfigForm = ({
     setIsTestResponseLoading(true);
     await save();
     try {
+      const overrides = getTestRequestOverrides?.();
       const data = await trpcClient.httpRequest.testHttpRequest.mutate({
         typebotId: typebot.id,
         blockId: blockId,
@@ -91,6 +104,7 @@ export const HttpRequestAdvancedConfigForm = ({
           options?.variablesForTest ?? [],
           typebot.variables,
         ),
+        basicAuth: overrides?.basicAuth,
       });
       setTestResponse(JSON.stringify(data, undefined, 2));
       setResponseKeys(computeDeepKeysMappingSuggestionList(data));
@@ -181,14 +195,17 @@ export const HttpRequestAdvancedConfigForm = ({
               <Accordion.Item>
                 <Accordion.Trigger>Body</Accordion.Trigger>
                 <Accordion.Panel>
-                  <Field.Root className="flex-row items-center">
-                    <Switch
-                      checked={isCustomBody}
-                      onCheckedChange={updateIsCustomBody}
-                    />
-                    <Field.Label>Custom body</Field.Label>
-                  </Field.Root>
-                  {isCustomBody && (
+                  {!hideCustomBodyToggle && (
+                    <Field.Root className="flex-row items-center">
+                      <Switch
+                        checked={isCustomBody}
+                        onCheckedChange={updateIsCustomBody}
+                      />
+                      <Field.Label>Custom body</Field.Label>
+                    </Field.Root>
+                  )}
+                  {renderBodyParameters && renderBodyParameters()}
+                  {isCustomBody && !hideBodyEditor && !renderBodyParameters && (
                     <CodeEditor
                       defaultValue={httpRequest?.body}
                       lang="json"
@@ -216,6 +233,7 @@ export const HttpRequestAdvancedConfigForm = ({
                       credentialsName="HTTP proxy"
                     />
                   )}
+                  {renderAdvancedParameters?.()}
                   <Field.Root className="flex-row">
                     <Field.Label>Timeout (s)</Field.Label>
                     <BasicNumberInput
@@ -228,18 +246,20 @@ export const HttpRequestAdvancedConfigForm = ({
                   </Field.Root>
                 </Accordion.Panel>
               </Accordion.Item>
-              <Accordion.Item>
-                <Accordion.Trigger>Variable values for test</Accordion.Trigger>
-                <Accordion.Panel>
-                  <TableList<VariableForTest>
-                    initialItems={options?.variablesForTest}
-                    onItemsChange={updateVariablesForTest}
-                    addLabel="Add an entry"
-                  >
-                    {(props) => <VariableForTestInputs {...props} />}
-                  </TableList>
-                </Accordion.Panel>
-              </Accordion.Item>
+              {!hideVariablesForTest && (
+                <Accordion.Item>
+                  <Accordion.Trigger>Variable values for test</Accordion.Trigger>
+                  <Accordion.Panel>
+                    <TableList<VariableForTest>
+                      initialItems={options?.variablesForTest}
+                      onItemsChange={updateVariablesForTest}
+                      addLabel="Add an entry"
+                    >
+                      {(props) => <VariableForTestInputs {...props} />}
+                    </TableList>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
             </Accordion.Root>
           </Accordion.Panel>
         </Accordion.Item>

@@ -3,6 +3,7 @@ export enum IntegrationBlockType {
   OPEN_AI = "OpenAI",
   GOOGLE_ANALYTICS = "Google Analytics",
   HTTP_REQUEST = "Webhook",
+  CUSTOM_CURL = "Custom CURL",
   EMAIL = "Email",
   ZAPIER = "Zapier",
   MAKE_COM = "Make.com",

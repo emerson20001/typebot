@@ -54,6 +54,14 @@ export const executeIntegration = async ({
           disableRequestTimeout: isNotDefined(env.CHAT_API_TIMEOUT),
         })),
       };
+    case IntegrationBlockType.CUSTOM_CURL:
+      return {
+        ...(await executeHttpRequestBlock(block, {
+          state,
+          sessionStore,
+          disableRequestTimeout: isNotDefined(env.CHAT_API_TIMEOUT),
+        })),
+      };
     case IntegrationBlockType.OPEN_AI:
       return {
         ...(await executeOpenAIBlock(state, block, sessionStore)),

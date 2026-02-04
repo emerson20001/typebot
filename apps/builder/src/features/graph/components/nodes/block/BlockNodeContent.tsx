@@ -26,6 +26,7 @@ import { TextInputNodeContent } from "@/features/blocks/inputs/textInput/compone
 import { TimeNodeContent } from "@/features/blocks/inputs/time/components/TimeNodeContent";
 import { UrlNodeContent } from "@/features/blocks/inputs/url/components/UrlNodeContent";
 import { ChatwootNodeBody } from "@/features/blocks/integrations/chatwoot/components/ChatwootNodeBody";
+import { CustomCurlNodeContent } from "@/features/blocks/integrations/customCurl/components/CustomCurlNodeContent";
 import { GoogleAnalyticsNodeBody } from "@/features/blocks/integrations/googleAnalytics/components/GoogleAnalyticsNodeBody";
 import { GoogleSheetsNodeContent } from "@/features/blocks/integrations/googleSheets/components/GoogleSheetsNodeContent";
 import { HttpRequestNodeContent } from "@/features/blocks/integrations/httpRequest/components/HttpRequestNodeContent";
@@ -146,6 +147,9 @@ export const BlockNodeContent = ({
     }
     case IntegrationBlockType.HTTP_REQUEST: {
       return <HttpRequestNodeContent block={block} />;
+    }
+    case IntegrationBlockType.CUSTOM_CURL: {
+      return <CustomCurlNodeContent block={block} />;
     }
     case IntegrationBlockType.ZAPIER: {
       return <ZapierContent block={block} />;

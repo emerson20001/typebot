@@ -4,6 +4,7 @@ import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import { CarouselHorizontal02Icon } from "@typebot.io/ui/icons/CarouselHorizontal02Icon";
+import { CommandIcon } from "@typebot.io/ui/icons/CommandIcon";
 import { Flag02Icon } from "@typebot.io/ui/icons/Flag02Icon";
 import { ZapIcon } from "@typebot.io/ui/icons/ZapIcon";
 import { cn } from "@typebot.io/ui/lib/cn";
@@ -167,6 +168,8 @@ export const BlockIcon = ({ type, className }: BlockIconProps): JSX.Element => {
       return <GoogleAnalyticsLogo className={className} />;
     case IntegrationBlockType.HTTP_REQUEST:
       return <ZapIcon className={className} />;
+    case IntegrationBlockType.CUSTOM_CURL:
+      return <CommandIcon className={className} />;
     case IntegrationBlockType.ZAPIER:
       return <ZapierLogo className={className} />;
     case IntegrationBlockType.MAKE_COM:

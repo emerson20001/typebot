@@ -61,6 +61,7 @@ model User {
   groupTitlesAutoGeneration   Json?
   preferredLanguage           String?
   termsAcceptedAt             DateTime?
+  customCurlTemplates         CustomCurlTemplate[]
 }
 
 model ApiToken {
@@ -411,6 +412,22 @@ model ThemeTemplate {
   workspaceId String
 }
 
+model CustomCurlTemplate {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  name       String
+  curlCommand String
+  type       CustomCurlTemplateType @default(Text)
+  quickReplyButtons Json?
+  templateBodyPreview String?
+  templateImageUrl String?
+  isExecutedOnClient Boolean?
+  timeout Int?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model BannedIp {
   id                   String   @id @default(cuid())
   createdAt            DateTime @default(now())
@@ -447,4 +464,18 @@ enum CollaborationType {
   READ
   WRITE
   FULL_ACCESS
+}
+
+enum CustomCurlTemplateType {
+  Text
+  Media
+  ListPicker
+  CallToAction
+  QuickReply
+  Card
+  Catalog
+  Carousel
+  WhatsAppCard
+  Authentication
+  Flows
 }
