@@ -252,7 +252,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
           }))
         : block.options?.variablesForTest;
 
-    onOptionsChange({
+    const nextOptions: CustomCurlBlock["options"] = {
       ...block.options,
       curlCommand,
       extractedVariables,
@@ -260,22 +260,28 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       variablesForTest: newVariablesForTest,
       bodyParams: stripContentVariablesParam(bodyParams),
       contentVariablesParams: result.data.contentVariablesParams ?? [],
-      templateType: templateOverrides?.templateType ?? templateType,
-      templateBodyPreview:
-        templateOverrides?.templateBodyPreview ?? templateBodyPreview,
-      templateImageUrl: templateOverrides?.templateImageUrl ?? templateImageUrl,
-      quickReplyButtons:
-        templateOverrides?.quickReplyButtons ?? quickReplyButtons,
-      isExecutedOnClient:
-        templateOverrides?.isExecutedOnClient ??
-        block.options?.isExecutedOnClient,
-      timeout: templateOverrides?.timeout ?? block.options?.timeout,
+      isExecutedOnClient: block.options?.isExecutedOnClient,
+      timeout: block.options?.timeout,
       isCustomBody:
         httpRequest.body !== undefined
           ? true
           : block.options?.isCustomBody ??
             defaultHttpRequestBlockOptions.isCustomBody,
-    });
+    };
+    if (templateOverrides) {
+      nextOptions.templateType =
+        templateOverrides.templateType ?? block.options?.templateType;
+      nextOptions.templateBodyPreview =
+        templateOverrides.templateBodyPreview ?? block.options?.templateBodyPreview;
+      nextOptions.templateImageUrl =
+        templateOverrides.templateImageUrl ?? block.options?.templateImageUrl;
+      nextOptions.quickReplyButtons =
+        templateOverrides.quickReplyButtons ?? block.options?.quickReplyButtons;
+      nextOptions.isExecutedOnClient =
+        templateOverrides.isExecutedOnClient ?? block.options?.isExecutedOnClient;
+      nextOptions.timeout = templateOverrides.timeout ?? block.options?.timeout;
+    }
+    onOptionsChange(nextOptions);
     setParseNonce((value) => value + 1);
     if (basicAuth) setTestBasicAuth(basicAuth);
 
