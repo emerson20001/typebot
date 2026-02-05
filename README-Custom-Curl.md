@@ -144,6 +144,10 @@ Isso permite que o front (viewer) mostre os botões e siga o caminho correto ap�
 - `isExecutedOnClient`
 - `timeout`
 
+**Importante:** ao salvar no banco, `templateType` precisa ser o **enum do Prisma** (`CustomCurlTemplateType`).  
+No backend, os labels amigáveis ("Quick Reply", "List Picker" etc.) são convertidos para os valores do enum
+(`QuickReply`, `ListPicker`, etc.) antes do `create/update`.
+
 ### 6.2 Save / Load
 - Ao **salvar**, os botões são derivados de `block.items` quando existem.
 - Ao **importar**, `quickReplyButtons` são restaurados e sincronizados com `items`.
