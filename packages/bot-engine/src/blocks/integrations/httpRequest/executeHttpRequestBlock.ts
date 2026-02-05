@@ -86,12 +86,13 @@ export const executeHttpRequestBlock = async (
   } & Params,
 ): Promise<ExecuteIntegrationResponse> => {
   if ("type" in block && block.type === IntegrationBlockType.CUSTOM_CURL) {
-    const customCurlMessage = buildCustomCurlMessage(block);
+    const isPreview = isNotDefined(state.typebotsQueue[0].resultId);
+    const customCurlMessage = buildCustomCurlMessage(block, { isPreview });
     const customCurlInputBlock = buildCustomCurlQuickReplyInputBlock(block);
     const customCurlInput = customCurlInputBlock
       ? await formatInputForChatResponse(customCurlInputBlock, {
           variables: state.typebotsQueue[0].typebot.variables,
-          isPreview: isNotDefined(state.typebotsQueue[0].resultId),
+          isPreview,
           workspaceId: state.workspaceId,
           sessionStore,
         })
@@ -495,8 +496,13 @@ const parseFormDataBody = (body: object) => {
   return searchParams;
 };
 
-const buildCustomCurlMessage = (block: CustomCurlBlock) => {
+const buildCustomCurlMessage = (
+  block: CustomCurlBlock,
+  { isPreview }: { isPreview: boolean },
+) => {
   const curlCommand = block.options?.curlCommand ?? "";
+  const previewText = isPreview ? resolveTemplatePreviewText(block) : undefined;
+  const messageText = previewText ?? curlCommand;
   return {
     id: createId(),
     type: BubbleBlockType.TEXT,
@@ -509,7 +515,7 @@ const buildCustomCurlMessage = (block: CustomCurlBlock) => {
           type: "p",
           children: [
             {
-              text: curlCommand,
+              text: messageText,
             },
           ],
         },
@@ -558,4 +564,27 @@ const formatTemplateType = (value?: string) => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+};
+
+const resolveTemplatePreviewText = (block: CustomCurlBlock) => {
+  const templateBodyPreview = block.options?.templateBodyPreview?.trim();
+  if (!templateBodyPreview) return undefined;
+  const replacements = new Map<string, string>();
+  const addEntries = (
+    entries: Array<{ key?: string; value?: string }> | undefined,
+  ) => {
+    if (!entries) return;
+    for (const entry of entries) {
+      if (!entry.key || entry.value === undefined) continue;
+      const key = entry.key.trim();
+      if (key === "") continue;
+      replacements.set(key, entry.value);
+    }
+  };
+  addEntries(block.options?.bodyParams);
+  addEntries(block.options?.contentVariablesParams);
+  return templateBodyPreview.replace(
+    /{{\s*([^}]+)\s*}}/g,
+    (match, key) => replacements.get(String(key).trim()) ?? match,
+  );
 };
