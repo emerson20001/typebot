@@ -1,8 +1,9 @@
 import { useTranslate } from "@tolgee/react";
 import { shouldOpenItemSettingsOnCreation } from "@typebot.io/blocks-core/helpers";
+import type { ItemV6 } from "@typebot.io/blocks-core/schemas/items/schema";
 import type {
+  Block,
   BlockIndices,
-  BlockWithItems,
 } from "@typebot.io/blocks-core/schemas/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
@@ -25,7 +26,7 @@ import { getItemName } from "./getItemName";
 import { ItemNode } from "./ItemNode";
 
 type Props = {
-  block: BlockWithItems;
+  block: Block & { items: ItemV6[] };
   indices: BlockIndices;
 };
 
