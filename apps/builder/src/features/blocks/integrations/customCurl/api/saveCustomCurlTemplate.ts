@@ -1,5 +1,5 @@
 import prisma from "@typebot.io/prisma";
-import type { CustomCurlTemplateType } from "@typebot.io/prisma/types";
+import type { Prisma } from "@typebot.io/prisma/types";
 import { z } from "@typebot.io/zod";
 import { authenticatedProcedure } from "@/helpers/server/trpc";
 
@@ -150,10 +150,7 @@ export const saveCustomCurlTemplate = authenticatedProcedure
     };
   });
 
-const templateTypeDbValueByLabel: Record<
-  (typeof customCurlTemplateTypeLabels)[number],
-  CustomCurlTemplateType
-> = {
+const templateTypeDbValueByLabel = {
   Text: "Text",
   Media: "Media",
   "List Picker": "ListPicker",
@@ -165,7 +162,10 @@ const templateTypeDbValueByLabel: Record<
   "WhatsApp Card": "WhatsAppCard",
   Authentication: "Authentication",
   Flows: "Flows",
-};
+} satisfies Record<
+  (typeof customCurlTemplateTypeLabels)[number],
+  Prisma.CustomCurlTemplateType
+>;
 
 const templateTypeLabelByDbValue: Record<
   string,
