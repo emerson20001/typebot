@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { blockHasItems } from "@typebot.io/blocks-core/helpers";
+import type { ItemV6 } from "@typebot.io/blocks-core/schemas/items/schema";
 import type {
   Block,
   BlockIndices,
@@ -23,7 +24,7 @@ export type BlocksActions = {
   ) => string | undefined;
   updateBlock: (
     indices: BlockIndices,
-    updates: Partial<Omit<BlockV6, "id" | "type">>,
+    updates: Partial<Omit<Block, "id" | "type">> & { items?: ItemV6[] },
   ) => void;
   duplicateBlock: (indices: BlockIndices) => void;
   detachBlockFromGroup: (indices: BlockIndices) => void;

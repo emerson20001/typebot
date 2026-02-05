@@ -9,7 +9,11 @@ import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 
-const parseDefaultItems = (type: BlockWithItems["type"]): ItemV6[] => {
+type DefaultItemsBlockType =
+  | BlockWithItems["type"]
+  | IntegrationBlockType.CUSTOM_CURL;
+
+const parseDefaultItems = (type: DefaultItemsBlockType): ItemV6[] => {
   switch (type) {
     case InputBlockType.CHOICE:
     case InputBlockType.PICTURE_CHOICE:

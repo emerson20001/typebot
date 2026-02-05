@@ -3,6 +3,7 @@ import type {
   BlockV6,
   BlockWithItems,
 } from "@typebot.io/blocks-core/schemas/schema";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import type { AbTestBlock } from "@typebot.io/blocks-logic/abTest/schema";
 import type { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import type { TDraggableEvent } from "@typebot.io/events/schemas";
@@ -24,10 +25,9 @@ type NodeElement = {
   ref: React.RefObject<HTMLElement | null>;
 };
 
-export type BlockWithCreatableItems = Exclude<
-  BlockWithItems,
-  { type: LogicBlockType.AB_TEST }
->;
+export type BlockWithCreatableItems =
+  | Exclude<BlockWithItems, { type: LogicBlockType.AB_TEST }>
+  | (CustomCurlBlock & { items: ItemV6[] });
 
 export type DraggableItem = Exclude<ItemV6, AbTestBlock["items"][number]> & {
   type: BlockWithCreatableItems["type"];

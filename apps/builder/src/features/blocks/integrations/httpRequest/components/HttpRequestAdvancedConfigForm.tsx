@@ -17,6 +17,7 @@ import { Button } from "@typebot.io/ui/components/Button";
 import { Field } from "@typebot.io/ui/components/Field";
 import { MoreInfoTooltip } from "@typebot.io/ui/components/MoreInfoTooltip";
 import { Switch } from "@typebot.io/ui/components/Switch";
+import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 import { BasicNumberInput } from "@/components/inputs/BasicNumberInput";
 import { BasicSelect } from "@/components/inputs/BasicSelect";
@@ -42,11 +43,11 @@ type Props = {
   getTestRequestOverrides?: () =>
     | { basicAuth?: { username: string; password: string } }
     | undefined;
-  renderBodyParameters?: () => JSX.Element;
+  renderBodyParameters?: () => ReactElement;
   hideCustomBodyToggle?: boolean;
   hideBodyEditor?: boolean;
   hideVariablesForTest?: boolean;
-  renderAdvancedParameters?: () => JSX.Element;
+  renderAdvancedParameters?: () => ReactElement;
 };
 
 export const HttpRequestAdvancedConfigForm = ({

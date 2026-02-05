@@ -18,7 +18,7 @@ import { ConditionItemNode } from "@/features/blocks/logic/condition/components/
 
 type Props = {
   item: Item;
-  blockType: BlockWithItems["type"];
+  blockType: BlockWithItems["type"] | IntegrationBlockType.CUSTOM_CURL;
   indices: ItemIndices;
   isMouseOver: boolean;
   blockId: string;

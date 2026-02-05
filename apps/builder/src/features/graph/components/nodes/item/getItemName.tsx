@@ -3,7 +3,9 @@ import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 
-export const getItemName = (blockType: BlockWithItems["type"]): string => {
+export const getItemName = (
+  blockType: BlockWithItems["type"] | IntegrationBlockType.CUSTOM_CURL,
+): string => {
   switch (blockType) {
     case InputBlockType.CHOICE:
       return "Button";

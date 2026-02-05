@@ -4,6 +4,7 @@ import type {
 } from "@typebot.io/blocks-core/schemas/items/schema";
 import type { BlockWithItems } from "@typebot.io/blocks-core/schemas/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import { isDefined } from "@typebot.io/lib/utils";
 import { ContextMenu } from "@typebot.io/ui/components/ContextMenu";
@@ -25,7 +26,7 @@ import { ItemNodeContextMenuPopup } from "./ItemNodeContextMenuPopup";
 
 type Props = {
   item: Item;
-  block: BlockWithItems;
+  block: BlockWithItems | CustomCurlBlock;
   indices: ItemIndices;
   onMouseDown?: (
     blockNodePosition: { absolute: Coordinates; relative: Coordinates },
