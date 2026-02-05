@@ -1,7 +1,4 @@
-import type {
-  BlockIndices,
-  BlockWithItems,
-} from "@typebot.io/blocks-core/schemas/schema";
+import type { BlockIndices } from "@typebot.io/blocks-core/schemas/schema";
 import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import { ItemNodesList } from "@/features/graph/components/nodes/item/ItemNodesList";
 import { CustomCurlNodeContent } from "./CustomCurlNodeContent";
@@ -20,7 +17,7 @@ export const CustomCurlBlockNode = ({ block, indices }: Props) => {
   const blockWithItems = {
     ...block,
     items: block.items ?? [],
-  } satisfies BlockWithItems;
+  };
 
   return (
     <div className="flex flex-col gap-2 w-[90%]">
