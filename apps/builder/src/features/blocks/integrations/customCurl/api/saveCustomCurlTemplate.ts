@@ -1,4 +1,5 @@
 import prisma from "@typebot.io/prisma";
+import type { CustomCurlTemplateType } from "@typebot.io/prisma/types";
 import { z } from "@typebot.io/zod";
 import { authenticatedProcedure } from "@/helpers/server/trpc";
 
@@ -151,7 +152,7 @@ export const saveCustomCurlTemplate = authenticatedProcedure
 
 const templateTypeDbValueByLabel: Record<
   (typeof customCurlTemplateTypeLabels)[number],
-  string
+  CustomCurlTemplateType
 > = {
   Text: "Text",
   Media: "Media",
