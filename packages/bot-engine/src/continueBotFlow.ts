@@ -81,6 +81,7 @@ export const continueBotFlow = async (
       sessionStore,
     });
 
+  const isPreview = isNotDefined(state.typebotsQueue[0].resultId);
   let newSessionState = state;
   const setVariableHistory: SetVariableHistoryItem[] = [];
 
@@ -182,12 +183,19 @@ export const continueBotFlow = async (
           sessionStore,
         });
       }
+      const retry = await parseRetryMessage(customCurlInputBlock, {
+        textBubbleContentFormat,
+        sessionStore,
+        state: newSessionState,
+      });
+      const curlMessage = buildCustomCurlMessage(block as CustomCurlBlock, {
+        isPreview,
+      });
       return {
-        ...(await parseRetryMessage(customCurlInputBlock, {
-          textBubbleContentFormat,
-          sessionStore,
-          state: newSessionState,
-        })),
+        ...retry,
+        messages: curlMessage
+          ? [curlMessage, ...(retry.messages ?? [])]
+          : retry.messages,
         newSessionState,
         visitedEdges: [],
         setVariableHistory: [],
@@ -886,4 +894,65 @@ const buildCustomCurlQuickReplyInputBlock = (
       isMultipleChoice: false,
     },
   };
+};
+
+const buildCustomCurlMessage = (
+  block: CustomCurlBlock | undefined,
+  { isPreview }: { isPreview: boolean },
+) => {
+  if (!block) return;
+  const curlCommand = block.options?.curlCommand ?? "";
+  const previewText = isPreview ? resolveTemplatePreviewText(block) : undefined;
+  const messageText = previewText ?? curlCommand;
+  return {
+    id: createId(),
+    type: BubbleBlockType.TEXT,
+    content: {
+      type: "richText",
+      templateType: formatTemplateType(block.options?.templateType),
+      richText: [
+        {
+          id: createId(),
+          type: "p",
+          children: [
+            {
+              text: messageText,
+            },
+          ],
+        },
+      ],
+    },
+  };
+};
+
+const formatTemplateType = (value?: string) => {
+  if (!value) return undefined;
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+};
+
+const resolveTemplatePreviewText = (block: CustomCurlBlock) => {
+  const templateBodyPreview = block.options?.templateBodyPreview?.trim();
+  if (!templateBodyPreview) return undefined;
+  const replacements = new Map<string, string>();
+  const addEntries = (
+    entries: Array<{ key?: string; value?: string }> | undefined,
+  ) => {
+    if (!entries) return;
+    for (const entry of entries) {
+      if (!entry.key || entry.value === undefined) continue;
+      const key = entry.key.trim();
+      if (key === "") continue;
+      replacements.set(key, entry.value);
+    }
+  };
+  addEntries(block.options?.bodyParams);
+  addEntries(block.options?.contentVariablesParams);
+  return templateBodyPreview.replace(
+    /{{\s*([^}]+)\s*}}/g,
+    (match, key) => replacements.get(String(key).trim()) ?? match,
+  );
 };
