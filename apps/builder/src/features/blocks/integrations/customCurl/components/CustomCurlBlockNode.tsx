@@ -17,9 +17,14 @@ export const CustomCurlBlockNode = ({ block, indices }: Props) => {
   if (!isQuickReply) return <CustomCurlNodeContent block={block} />;
   if (!block.items) return <CustomCurlNodeContent block={block} />;
 
+  const blockWithItems = {
+    ...block,
+    items: block.items ?? [],
+  } satisfies BlockWithItems;
+
   return (
     <div className="flex flex-col gap-2 w-[90%]">
-      <ItemNodesList block={block as BlockWithItems} indices={indices} />
+      <ItemNodesList block={blockWithItems} indices={indices} />
     </div>
   );
 };
