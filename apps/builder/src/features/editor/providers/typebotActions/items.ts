@@ -32,10 +32,10 @@ type NewItem = Pick<DraggableItem, "outgoingEdgeId"> & Partial<DraggableItem>;
 export type ItemsActions = {
   createItem: (item: NewItem, indices: ItemIndices) => string | undefined;
   duplicateItem: (indices: ItemIndices) => void;
-  updateItem: (
-    indices: ItemIndices,
-    updates: Partial<Omit<Item, "id">>,
-  ) => void;
+  updateItem: {
+    (indices: ItemIndices, updates: Partial<Omit<Item, "id">>): void;
+    (indices: ItemIndices, updates: Partial<Omit<ButtonItem, "id">>): void;
+  };
   detachItemFromBlock: (indices: ItemIndices) => void;
   deleteItem: (indices: ItemIndices) => void;
   deleteItemPath: (indices: ItemIndices & { pathIndex: number }) => void;
@@ -233,7 +233,7 @@ export const duplicateItemDraft = (
     edges,
   }: {
     blockId: string;
-    blockType: BlockWithItems["type"];
+    blockType: BlockWithItems["type"] | IntegrationBlockType.CUSTOM_CURL;
     edges: Edge[];
   },
 ): { newItem: Item; newEdges?: Edge[] } => {
@@ -266,6 +266,16 @@ export const duplicateItemDraft = (
       return { newItem, newEdges };
     }
     case InputBlockType.CHOICE: {
+      const baseItem = item as ButtonItem;
+      const newItem = {
+        ...baseItem,
+        outgoingEdgeId: newDefaultOutgoingEdge?.id,
+        id: newItemId,
+        content: baseItem.content,
+      } satisfies ButtonItem;
+      return { newItem, newEdges };
+    }
+    case IntegrationBlockType.CUSTOM_CURL: {
       const baseItem = item as ButtonItem;
       const newItem = {
         ...baseItem,

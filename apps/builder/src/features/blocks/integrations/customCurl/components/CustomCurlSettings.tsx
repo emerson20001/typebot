@@ -242,7 +242,8 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
     }
   };
 
-  const updateQuickReplyButtonCount = (count: number) => {
+  const updateQuickReplyButtonCount = (count?: number) => {
+    if (count === undefined) return;
     const normalizedCount = Math.max(1, Math.floor(count));
     const nextButtons = buildQuickReplyButtons(
       normalizedCount,
@@ -575,7 +576,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         </div>
       </Field.Root>
       <div className="flex items-center gap-2">
-        <Button variant="secondary" onClick={handleParse}>
+        <Button variant="secondary" onClick={() => handleParse()}>
           Parse CURL
         </Button>
         <Button variant="secondary" onClick={handleFillTestValues}>
@@ -592,7 +593,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         )}
       </div>
       {parseError && (
-        <Alert.Root variant="danger">
+        <Alert.Root variant="error">
           <Alert.Description>{parseError}</Alert.Description>
         </Alert.Root>
       )}
@@ -648,45 +649,47 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         getTestRequestOverrides={() =>
           testBasicAuth ? { basicAuth: testBasicAuth } : undefined
         }
-        renderAdvancedParameters={() =>
-          templateType === "Quick Reply" ? (
-            <div className="flex flex-col gap-3">
-              <Field.Root className="flex-row">
-                <Field.Label>Quick reply buttons</Field.Label>
-                <BasicNumberInput
-                  key={`quick-reply-count-${quickReplyButtons.length}`}
-                  defaultValue={quickReplyButtons.length}
-                  min={1}
-                  max={10}
-                  onValueChange={updateQuickReplyButtonCount}
-                  withVariableButton={false}
-                />
-              </Field.Root>
-              {quickReplyButtons.map((button, index) => (
-                <div
-                  key={`quick-reply-${index}-${selectedTemplateId ?? "current"}`}
-                  className="flex gap-2"
-                >
-                  <DebouncedTextInput
-                    defaultValue={button.text}
-                    placeholder="Button text"
-                    debounceTimeout={0}
-                    onValueChange={(value) =>
-                      updateQuickReplyButton(index, { text: value })
-                    }
-                  />
-                  <DebouncedTextInput
-                    defaultValue={button.id}
-                    placeholder="Button ID"
-                    debounceTimeout={0}
-                    onValueChange={(value) =>
-                      updateQuickReplyButton(index, { id: value })
-                    }
-                  />
+        renderAdvancedParameters={
+          templateType === "Quick Reply"
+            ? () => (
+                <div className="flex flex-col gap-3">
+                  <Field.Root className="flex-row">
+                    <Field.Label>Quick reply buttons</Field.Label>
+                    <BasicNumberInput
+                      key={`quick-reply-count-${quickReplyButtons.length}`}
+                      defaultValue={quickReplyButtons.length}
+                      min={1}
+                      max={10}
+                      onValueChange={updateQuickReplyButtonCount}
+                      withVariableButton={false}
+                    />
+                  </Field.Root>
+                  {quickReplyButtons.map((button, index) => (
+                    <div
+                      key={`quick-reply-${index}-${selectedTemplateId ?? "current"}`}
+                      className="flex gap-2"
+                    >
+                      <DebouncedTextInput
+                        defaultValue={button.text}
+                        placeholder="Button text"
+                        debounceTimeout={0}
+                        onValueChange={(value) =>
+                          updateQuickReplyButton(index, { text: value })
+                        }
+                      />
+                      <DebouncedTextInput
+                        defaultValue={button.id}
+                        placeholder="Button ID"
+                        debounceTimeout={0}
+                        onValueChange={(value) =>
+                          updateQuickReplyButton(index, { id: value })
+                        }
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : undefined
+              )
+            : undefined
         }
         hideVariablesForTest
       />
@@ -737,6 +740,7 @@ const buildContentVariablesValue = (params: KeyValue[]) => {
   const contentVariables = params
     .filter((item) => item.key && item.value)
     .reduce<Record<string, string>>((acc, item) => {
+      if (!item.key || !item.value) return acc;
       acc[item.key] = item.value;
       return acc;
     }, {});

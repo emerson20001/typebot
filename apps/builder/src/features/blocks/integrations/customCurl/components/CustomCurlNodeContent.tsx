@@ -17,7 +17,10 @@ export const CustomCurlNodeContent = ({ block }: Props) => {
         {webhook.method} {webhook.url}
       </p>
       {block.options?.responseVariableMapping
-        ?.filter((mapping) => mapping.variableId)
+        ?.filter(
+          (mapping): mapping is typeof mapping & { variableId: string } =>
+            Boolean(mapping.variableId),
+        )
         .map((mapping) => (
           <SetVariableLabel
             key={mapping.variableId}

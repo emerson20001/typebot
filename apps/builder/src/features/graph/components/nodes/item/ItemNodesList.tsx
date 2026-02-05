@@ -2,10 +2,12 @@ import { useTranslate } from "@tolgee/react";
 import { shouldOpenItemSettingsOnCreation } from "@typebot.io/blocks-core/helpers";
 import type { ItemV6 } from "@typebot.io/blocks-core/schemas/items/schema";
 import type {
-  Block,
   BlockIndices,
+  BlockWithItems,
 } from "@typebot.io/blocks-core/schemas/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import { isDefined } from "@typebot.io/lib/utils";
 import type React from "react";
@@ -26,7 +28,7 @@ import { getItemName } from "./getItemName";
 import { ItemNode } from "./ItemNode";
 
 type Props = {
-  block: Block & { items: ItemV6[] };
+  block: (BlockWithItems | CustomCurlBlock) & { items: ItemV6[] };
   indices: BlockIndices;
 };
 
@@ -199,7 +201,7 @@ const DefaultItemNode = ({
   block,
   groupId,
 }: {
-  block: BlockWithItems;
+  block: BlockWithItems | CustomCurlBlock;
   groupId: string;
 }) => {
   const { t } = useTranslate();
@@ -223,12 +225,13 @@ const DefaultItemNode = ({
 };
 
 const checkIfDefaultItemIsNeeded = (
-  block: BlockWithItems,
+  block: BlockWithItems | CustomCurlBlock,
   isLastBlock: boolean,
 ) => {
   if (!isLastBlock) return false;
   if (block.outgoingEdgeId || block.type === LogicBlockType.CONDITION)
     return true;
+  if (block.type === IntegrationBlockType.CUSTOM_CURL) return true;
   if (block.items.length === 1) return false;
   if (block.type === InputBlockType.CARDS) {
     return block.items.some((item) =>

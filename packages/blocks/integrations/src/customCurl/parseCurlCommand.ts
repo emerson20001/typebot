@@ -520,7 +520,7 @@ export const parseCurlCommand = (command: string): ParseCurlResult => {
       (header) => header.key.toLowerCase() === "authorization",
     );
 
-  if (shouldIncludeBasicAuth) {
+  if (basicAuth && shouldIncludeBasicAuth) {
     addVariable("username");
     addVariable("password");
     const value = `Basic ${basicAuth.username}:${basicAuth.password}`;
