@@ -6,11 +6,17 @@ import {
 } from "@typebot.io/blocks-core/helpers";
 import type { BlockV6 } from "@typebot.io/blocks-core/schemas/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import { isDefined } from "@typebot.io/lib/utils";
 
 export const hasDefaultConnector = (block: BlockV6) =>
-  (!isChoiceInput(block) &&
+  (!(
+    block.type === IntegrationBlockType.CUSTOM_CURL &&
+    "options" in block &&
+    block.options?.templateType === "Quick Reply"
+  ) &&
+    !isChoiceInput(block) &&
     !isPictureChoiceInput(block) &&
     !isConditionBlock(block) &&
     !isCardsInput(block) &&

@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 5600 >>
+stream
+BT /F1 9 Tf 40 800 Td 0 -12 Td (Typebot  Custom CURL Integration \(Technical Technical Notes\)\nDate: 2026-02-05\nBranch: typebot-clean-v3.15.2\n\n0\) Scope\nThis document describes the Custom CURL integration implementation, including builder UI, template persistence, runtime behavior, Quick Reply branching, and related schema/runtime changes.\n\n1\) Feature Summary\n- New integration: Custom CURL \(parses raw curl, extracts params, generates inputs, builds HTTP request for test only\).\n- Builder: supports curl paste, parse, headers/body params, template metadata, quick reply button definitions, image preview, template save/load.\n- Runtime: DOES NOT execute HTTP requests for Custom CURL during flow. It only returns:\n  - a text bubble containing the full curl command, and\n  - a choice input when templateType = Quick Reply.\n\n2\) Runtime Execution Model\n2.1 No side effects during flow\n- Custom CURL is explicitly short-circuited in executeHttpRequestBlock:\n  - When block.type == IntegrationBlockType.CUSTOM_CURL, it returns messages + input and skips executeHttpRequest.\n- HTTP requests are only executed via the Test the request action in builder.\n\n2.2 Chat API output\n- A Custom CURL block yields:\n  - messages[] includes a text bubble with curl command\n  - content.templateType set to snake_case \(e.g., quick_reply\)\n  - input when quick reply is enabled \(choice input with items\)\n\nExample output fragment:\n{\n  "messages": [\n    {\n      "type": "text",\n      "content": {\n        "type": "richText",\n        "templateType": "quick_reply",\n        "richText": [{ "type": "p", "children": [{ "text": "curl ..." }] }]\n      }\n    }\n  ],\n  "input": {\n    "type": "choice input",\n    "items": [\n      { "content": "Sim", "value": "1", "outgoingEdgeId": "..." },\n      { "content": "Nao", "value": "2", "outgoingEdgeId": "..." }\n    ],\n    "options": { "isMultipleChoice": false }\n  }\n}\n\n3\) Quick Reply Branching\n3.1 Data model\n- Quick reply buttons are represented as items on the Custom CURL block \(same as Choice input items\).\n- Each item supports:\n  - content \(button label\)\n  - value \(internal id\)\n  - outgoingEdgeId \(branch path\)\n\n3.2 Builder behavior\n- When templateType == "Quick Reply":\n  - block renders ItemNodesList \(button nodes\) instead of standard node content\n  - Default item is visible \(fallback path\)\n  - Block-level connector is hidden\n\n3.3 Branch logic\n- Continue flow uses validateAndParseInputMessage \(choice input\), so replies map to item.outgoingEdgeId.\n- Default path is triggered by any reply that does not match any button.\n\n4\) Template Persistence\n4.1 Template storage\n- Template includes:\n  - name\n  - curlCommand\n  - type\n  - quickReplyButtons\n  - templateBodyPreview\n  - templateImageUrl \(base64 data URL\)\n  - isExecutedOnClient\n  - timeout\n\n4.2 Save/Load\n- On save: quickReplyButtons are derived from block items when present.\n- On load: quickReplyButtons are restored and synced to block items.\n\n5\) Builder UI Components\n- CustomCurlSettings:\n  - curl input + Parse CURL\n  - form sections: headers, body params, content variables, advanced params\n  - quick reply button editor \(count + text/id\)\n  - template metadata \(type, body preview, image\)\n  - template save dialog\n- CustomCurlBlockNode:\n  - for Quick Reply: shows button nodes \(ItemNodesList\)\n  - otherwise: shows CustomCurlNodeContent\n\n6\) SSRF Test Adjustment\n- validateHttpReqUrl.test.ts updated to allow localhost in development.\n- This matches validateHttpReqUrl behavior which blocks localhost in non-development environments only.\n\n7\) Files Changed \(Key\)\nBuilder:\n- apps/builder/src/features/blocks/integrations/customCurl/components/CustomCurlSettings.tsx\n- apps/builder/src/features/blocks/integrations/customCurl/components/CustomCurlBlockNode.tsx\n- apps/builder/src/features/blocks/integrations/customCurl/components/CustomCurlNodeContent.tsx\n- apps/builder/src/features/blocks/integrations/customCurl/api/saveCustomCurlTemplate.ts\n- apps/builder/src/features/blocks/integrations/customCurl/api/listCustomCurlTemplates.ts\n- apps/builder/src/features/graph/components/nodes/item/ItemNodeContent.tsx\n- apps/builder/src/features/graph/components/nodes/item/ItemNodesList.tsx\n- apps/builder/src/features/graph/components/nodes/item/getItemName.tsx\n- apps/builder/src/features/typebot/helpers/parseNewBlock.ts\n- apps/builder/src/features/typebot/helpers/hasDefaultConnector.ts\n- apps/builder/src/features/editor/providers/typebotActions/items.ts\n\nPackages:\n- packages/blocks/integrations/src/customCurl/schema.ts\n- packages/blocks/integrations/src/customCurl/parseCurlCommand.ts\n- packages/blocks/core/src/helpers.ts\n- packages/bot-engine/src/blocks/integrations/httpRequest/executeHttpRequestBlock.ts\n- packages/bot-engine/src/blocks/integrations/httpRequest/saveDataInResponseVariableMapping.ts\n- packages/bot-engine/src/continueBotFlow.ts\n- packages/bot-engine/src/walkFlowForward.ts\n- packages/bot-engine/src/types.ts\n- packages/chat-api/src/schemas.ts\n- packages/lib/src/ssrf/validateHttpReqUrl.test.ts\n\n8\) Notes for Further Development\n- If runtime execution is needed, add a toggle in options and allow executeHttpRequest for Custom CURL when enabled.\n- Add template-specific validations \(button count limits, template-type-specific constraints\).\n- Consider mapping outgoingEdgeId between templates and block items when importing into a new flow.\n- Add migration step if items are introduced for legacy templates lacking items.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000000 00000 n 
+0000000049 00000 n 
+0000000106 00000 n 
+0000000232 00000 n 
+0000005884 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+5954
+%%EOF

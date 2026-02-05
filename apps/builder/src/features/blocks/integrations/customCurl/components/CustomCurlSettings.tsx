@@ -94,6 +94,14 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
     block.options?.contentVariablesParams ??
     parseContentVariablesValueToParams(block.options?.bodyParams);
   const quickReplyButtons = block.options?.quickReplyButtons ?? [];
+  const quickReplyButtonsFromItems = useMemo(() => {
+    if (templateType !== "Quick Reply") return undefined;
+    if (!block.items || block.items.length === 0) return undefined;
+    return (block.items as ButtonItem[]).map((item) => ({
+      text: item.content,
+      id: item.value,
+    }));
+  }, [block.items, templateType]);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -377,6 +385,9 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       nextOptions.timeout = templateOverrides.timeout ?? block.options?.timeout;
     }
     onOptionsChange(nextOptions);
+    if (nextOptions.templateType === "Quick Reply") {
+      syncItemsWithButtons(nextOptions.quickReplyButtons ?? []);
+    }
     setParseNonce((value) => value + 1);
     if (basicAuth) setTestBasicAuth(basicAuth);
 
@@ -692,7 +703,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         }
         curlCommand={localCurlCommand}
         templateType={templateType}
-        quickReplyButtons={quickReplyButtons}
+        quickReplyButtons={quickReplyButtonsFromItems ?? quickReplyButtons}
         templateBodyPreview={templateBodyPreview}
         templateImageUrl={templateImageUrl}
         isExecutedOnClient={block.options?.isExecutedOnClient}

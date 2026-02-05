@@ -85,6 +85,24 @@ export const executeHttpRequestBlock = async (
     sessionStore: SessionStore;
   } & Params,
 ): Promise<ExecuteIntegrationResponse> => {
+  if ("type" in block && block.type === IntegrationBlockType.CUSTOM_CURL) {
+    const customCurlMessage = buildCustomCurlMessage(block);
+    const customCurlInputBlock = buildCustomCurlQuickReplyInputBlock(block);
+    const customCurlInput = customCurlInputBlock
+      ? await formatInputForChatResponse(customCurlInputBlock, {
+          variables: state.typebotsQueue[0].typebot.variables,
+          isPreview: isNotDefined(state.typebotsQueue[0].resultId),
+          workspaceId: state.workspaceId,
+          sessionStore,
+        })
+      : undefined;
+    return {
+      outgoingEdgeId: block.outgoingEdgeId,
+      messages: customCurlMessage ? [customCurlMessage] : undefined,
+      input: customCurlInput,
+    };
+  }
+
   const logs: LogInSession[] = [];
   const httpRequest =
     block.options?.webhook ??
@@ -135,23 +153,6 @@ export const executeHttpRequestBlock = async (
     timeout: block.options?.timeout,
   });
 
-  const customCurlMessage =
-    "type" in block && block.type === IntegrationBlockType.CUSTOM_CURL
-      ? buildCustomCurlMessage(block)
-      : undefined;
-  const customCurlInputBlock =
-    "type" in block && block.type === IntegrationBlockType.CUSTOM_CURL
-      ? buildCustomCurlQuickReplyInputBlock(block)
-      : undefined;
-  const customCurlInput = customCurlInputBlock
-    ? await formatInputForChatResponse(customCurlInputBlock, {
-        variables: state.typebotsQueue[0].typebot.variables,
-        isPreview: isNotDefined(state.typebotsQueue[0].resultId),
-        workspaceId: state.workspaceId,
-        sessionStore,
-      })
-    : undefined;
-
   return {
     ...saveDataInResponseVariableMapping({
       state,
@@ -163,8 +164,6 @@ export const executeHttpRequestBlock = async (
       response: httpRequestResponse,
       sessionStore,
     }),
-    messages: customCurlMessage ? [customCurlMessage] : undefined,
-    input: customCurlInput,
     startTimeShouldBeUpdated,
   };
 };
