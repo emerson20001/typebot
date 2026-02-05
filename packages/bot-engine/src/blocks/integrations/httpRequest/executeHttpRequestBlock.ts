@@ -19,6 +19,7 @@ import type {
 import type { MakeComBlock } from "@typebot.io/blocks-integrations/makeCom/schema";
 import type { PabblyConnectBlock } from "@typebot.io/blocks-integrations/pabblyConnect/schema";
 import type { ZapierBlock } from "@typebot.io/blocks-integrations/zapier/schema";
+import type { ContinueChatResponse } from "@typebot.io/chat-api/schemas";
 import type {
   SessionState,
   TypebotInSession,
@@ -503,7 +504,7 @@ const buildCustomCurlMessage = (
   const curlCommand = block.options?.curlCommand ?? "";
   const previewText = isPreview ? resolveTemplatePreviewText(block) : undefined;
   const messageText = previewText ?? curlCommand;
-  return {
+  const message = {
     id: createId(),
     type: BubbleBlockType.TEXT,
     content: {
@@ -521,7 +522,8 @@ const buildCustomCurlMessage = (
         },
       ],
     },
-  };
+  } satisfies ContinueChatResponse["messages"][number];
+  return message;
 };
 
 const buildCustomCurlQuickReplyInputBlock = (
