@@ -321,7 +321,9 @@ export const NodeSettings = ({
       );
     }
     case IntegrationBlockType.CUSTOM_CURL: {
-      return <CustomCurlSettings block={node} onOptionsChange={updateOptions} />;
+      return (
+        <CustomCurlSettings block={node} onOptionsChange={updateOptions} />
+      );
     }
     case IntegrationBlockType.EMAIL: {
       return (

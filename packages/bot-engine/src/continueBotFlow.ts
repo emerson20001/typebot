@@ -5,11 +5,13 @@ import {
   isInputBlock,
 } from "@typebot.io/blocks-core/helpers";
 import type { Block } from "@typebot.io/blocks-core/schemas/schema";
+import type { ChoiceInputBlock } from "@typebot.io/blocks-inputs/choice/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { defaultEmailInputOptions } from "@typebot.io/blocks-inputs/email/constants";
 import { defaultPaymentInputOptions } from "@typebot.io/blocks-inputs/payment/constants";
 import type { InputBlock } from "@typebot.io/blocks-inputs/schema";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import type {
   ContinueChatResponse,
@@ -26,6 +28,7 @@ import { forgedBlocks } from "@typebot.io/forge-repository/definitions";
 import type { ForgedBlock } from "@typebot.io/forge-repository/schemas";
 import { getBlockById } from "@typebot.io/groups/helpers/getBlockById";
 import type { Group } from "@typebot.io/groups/schemas";
+import { createId } from "@typebot.io/lib/createId";
 import { parseUnknownError } from "@typebot.io/lib/parseUnknownError";
 import { byId, isDefined, isNotDefined } from "@typebot.io/lib/utils";
 import type { AnswerInSessionState } from "@typebot.io/results/schemas/answers";
@@ -115,6 +118,96 @@ export const continueBotFlow = async (
   const { firstBubbleWasStreamed } = nonInputProcessResult;
 
   let continueReply: SuccessReply | SkipReply | undefined;
+
+  const customCurlInputBlock = buildCustomCurlQuickReplyInputBlock(block);
+  if (customCurlInputBlock && isInputMessage(reply)) {
+    const parsedReplyResult = validateAndParseInputMessage(reply, {
+      block: customCurlInputBlock,
+      variables: newSessionState.typebotsQueue[0].typebot.variables,
+      sessionStore,
+    });
+
+    if (
+      parsedReplyResult.status === "success" &&
+      parsedReplyResult.variablesToUpdate
+    ) {
+      const { updatedState, newSetVariableHistory } = updateVariablesInSession({
+        state: newSessionState,
+        newVariables: parsedReplyResult.variablesToUpdate,
+        currentBlockId: customCurlInputBlock.id,
+      });
+      newSessionState = updatedState;
+      setVariableHistory.push(...newSetVariableHistory);
+    }
+
+    const invalidReplyEvent =
+      parsedReplyResult.status === "fail"
+        ? findInvalidReplyEvent(newSessionState)
+        : undefined;
+
+    if (!skipReplyEvent && !invalidReplyEvent) {
+      const replyEvent = findReplyEvent(newSessionState);
+      if (replyEvent) {
+        const { updatedState, newSetVariableHistory } = executeReplyEvent(
+          replyEvent,
+          {
+            state: newSessionState,
+            reply,
+          },
+        );
+        newSessionState = updatedState;
+        setVariableHistory.push(...newSetVariableHistory);
+        return continueBotFlow(undefined, {
+          state: newSessionState,
+          version,
+          textBubbleContentFormat,
+          sessionStore,
+        });
+      }
+    }
+
+    if (parsedReplyResult.status === "fail") {
+      if (invalidReplyEvent) {
+        const { updatedState, newSetVariableHistory } =
+          executeInvalidReplyEvent(invalidReplyEvent, {
+            state: newSessionState,
+            reply,
+          });
+        newSessionState = updatedState;
+        setVariableHistory.push(...newSetVariableHistory);
+        return continueBotFlow(undefined, {
+          state: newSessionState,
+          version,
+          textBubbleContentFormat,
+          sessionStore,
+        });
+      }
+      return {
+        ...(await parseRetryMessage(customCurlInputBlock, {
+          textBubbleContentFormat,
+          sessionStore,
+          state: newSessionState,
+        })),
+        newSessionState,
+        visitedEdges: [],
+        setVariableHistory: [],
+      };
+    }
+
+    const formattedReply =
+      "content" in parsedReplyResult && reply?.type === "text"
+        ? parsedReplyResult.content
+        : undefined;
+    newSessionState = await processAndSaveAnswer(
+      newSessionState,
+      customCurlInputBlock,
+    )(
+      isDefined(formattedReply)
+        ? { ...reply, type: "text", text: formattedReply }
+        : reply,
+    );
+    continueReply = parsedReplyResult;
+  }
 
   if (isInputBlock(block) && isInputMessage(reply)) {
     const parsedReplyResult = validateAndParseInputMessage(reply, {
@@ -759,3 +852,38 @@ const findInvalidReplyEvent = (
 const isInputMessage = (
   message: Message | undefined,
 ): message is InputMessage => message?.type !== "command";
+
+const buildCustomCurlQuickReplyInputBlock = (
+  block: Block,
+): ChoiceInputBlock | undefined => {
+  if (block.type !== IntegrationBlockType.CUSTOM_CURL) return undefined;
+  const customBlock = block as CustomCurlBlock;
+  if (customBlock.options?.templateType !== "Quick Reply") return undefined;
+  const itemsFromBlock = (customBlock.items ?? []) as ChoiceInputBlock["items"];
+  const items =
+    itemsFromBlock.length > 0
+      ? itemsFromBlock
+          .map((item) => ({
+            id: item.id,
+            content: item.content,
+            value: item.value,
+            outgoingEdgeId: item.outgoingEdgeId,
+          }))
+          .filter((item) => item.content || item.value)
+      : (customBlock.options?.quickReplyButtons ?? [])
+          .map((button) => ({
+            id: button.id ?? createId(),
+            content: button.text ?? button.id ?? "",
+            value: button.id ?? undefined,
+          }))
+          .filter((item) => item.content || item.value);
+  if (items.length === 0) return undefined;
+  return {
+    id: customBlock.id,
+    type: InputBlockType.CHOICE,
+    items,
+    options: {
+      isMultipleChoice: false,
+    },
+  };
+};

@@ -1,15 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
-import { Button } from "@typebot.io/ui/components/Button";
-import { Dialog } from "@typebot.io/ui/components/Dialog";
-import { Field } from "@typebot.io/ui/components/Field";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { DebouncedTextInput } from "@/components/inputs/DebouncedTextInput";
-import { queryClient, trpc } from "@/lib/queryClient";
-import { BasicSelect } from "@/components/inputs/BasicSelect";
 import type {
   CustomCurlTemplateType,
   QuickReplyButton,
 } from "@typebot.io/blocks-integrations/customCurl/schema";
+import { Button } from "@typebot.io/ui/components/Button";
+import { Dialog } from "@typebot.io/ui/components/Dialog";
+import { Field } from "@typebot.io/ui/components/Field";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { BasicSelect } from "@/components/inputs/BasicSelect";
+import { DebouncedTextInput } from "@/components/inputs/DebouncedTextInput";
+import { queryClient, trpc } from "@/lib/queryClient";
 
 type Template = {
   id: string;

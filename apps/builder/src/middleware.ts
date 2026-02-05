@@ -40,7 +40,8 @@ export function middleware(req: NextRequest) {
   const iframeAutologinSessionCookie =
     req.cookies.get(IFRAME_AUTOLOGIN_SESSION_COOKIE)?.value ?? null;
   const hasIframeAutologinMarkers = Boolean(
-    iframeAutologinSessionCookie || req.cookies.get(IFRAME_AUTOLOGIN_ID_COOKIE)?.value,
+    iframeAutologinSessionCookie ||
+      req.cookies.get(IFRAME_AUTOLOGIN_ID_COOKIE)?.value,
   );
   const isIframeAutologinSession =
     Boolean(sessionToken) &&
@@ -67,7 +68,9 @@ export function middleware(req: NextRequest) {
     const allowedPath = `/typebots/${safeId}/edit`;
     const url = req.nextUrl.clone();
     url.pathname =
-      locale && locale !== defaultLocale ? `/${locale}${allowedPath}` : allowedPath;
+      locale && locale !== defaultLocale
+        ? `/${locale}${allowedPath}`
+        : allowedPath;
     return NextResponse.redirect(url);
   }
 

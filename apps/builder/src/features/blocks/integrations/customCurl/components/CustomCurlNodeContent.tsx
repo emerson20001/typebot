@@ -16,17 +16,16 @@ export const CustomCurlNodeContent = ({ block }: Props) => {
       <p className="pr-6 text-gray-9 truncate">
         {webhook.method} {webhook.url}
       </p>
-      {block.options?.responseVariableMapping
-        ?.map((mapping) => {
-          if (!mapping.variableId) return null;
-          return (
-            <SetVariableLabel
-              key={mapping.variableId}
-              variableId={mapping.variableId}
-              variables={typebot?.variables}
-            />
-          );
-        })}
+      {block.options?.responseVariableMapping?.map((mapping) => {
+        if (!mapping.variableId) return null;
+        return (
+          <SetVariableLabel
+            key={mapping.variableId}
+            variableId={mapping.variableId}
+            variables={typebot?.variables}
+          />
+        );
+      })}
     </div>
   );
 };

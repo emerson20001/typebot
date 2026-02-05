@@ -1,7 +1,7 @@
 import { authRouter } from "@/features/auth/api/router";
+import { customCurlRouter } from "@/features/blocks/integrations/customCurl/api/router";
 import { googleSheetsRouter } from "@/features/blocks/integrations/googleSheets/api/router";
 import { openAIRouter } from "@/features/blocks/integrations/openai/api/router";
-import { customCurlRouter } from "@/features/blocks/integrations/customCurl/api/router";
 import { credentialsRouter } from "@/features/credentials/api/router";
 import { generateGroupTitle } from "@/features/editor/api/generateGroupTitle";
 import { getFeatureFlags } from "@/features/featureFlags/api/getFeatureFlags";

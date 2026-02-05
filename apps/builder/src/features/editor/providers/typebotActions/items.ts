@@ -13,6 +13,7 @@ import type {
 import type { ButtonItem } from "@typebot.io/blocks-inputs/choice/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import type { PictureChoiceItem } from "@typebot.io/blocks-inputs/pictureChoice/schema";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import type { AbTestBlock } from "@typebot.io/blocks-logic/abTest/schema";
 import type { ConditionItem } from "@typebot.io/blocks-logic/condition/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
@@ -169,6 +170,16 @@ const createItem = (
       return newItem;
     }
     case InputBlockType.CHOICE: {
+      const baseItem = item as ButtonItem;
+      const newItem = {
+        ...baseItem,
+        id: "id" in item && item.id ? item.id : createId(),
+        content: baseItem.content,
+      };
+      block.items.splice(itemIndex, 0, newItem);
+      return newItem;
+    }
+    case IntegrationBlockType.CUSTOM_CURL: {
       const baseItem = item as ButtonItem;
       const newItem = {
         ...baseItem,

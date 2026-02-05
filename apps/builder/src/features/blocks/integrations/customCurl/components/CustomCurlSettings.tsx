@@ -1,30 +1,31 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { ButtonItem } from "@typebot.io/blocks-inputs/choice/schema";
+import { parseCurlCommand } from "@typebot.io/blocks-integrations/customCurl/parseCurlCommand";
 import type {
   CustomCurlBlock,
   CustomCurlTemplateType,
   QuickReplyButton,
 } from "@typebot.io/blocks-integrations/customCurl/schema";
-import { parseCurlCommand } from "@typebot.io/blocks-integrations/customCurl/parseCurlCommand";
 import { defaultHttpRequestBlockOptions } from "@typebot.io/blocks-integrations/httpRequest/constants";
+import type { KeyValue } from "@typebot.io/blocks-integrations/httpRequest/schema";
 import { createId } from "@typebot.io/lib/createId";
 import { Alert } from "@typebot.io/ui/components/Alert";
 import { Badge } from "@typebot.io/ui/components/Badge";
 import { Button } from "@typebot.io/ui/components/Button";
+import { Dialog } from "@typebot.io/ui/components/Dialog";
 import { Field } from "@typebot.io/ui/components/Field";
 import { Textarea } from "@typebot.io/ui/components/Textarea";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { BasicNumberInput } from "@/components/inputs/BasicNumberInput";
+import { BasicSelect } from "@/components/inputs/BasicSelect";
+import { DebouncedTextInput } from "@/components/inputs/DebouncedTextInput";
+import { TableList } from "@/components/TableList";
 import { useTypebot } from "@/features/editor/providers/TypebotProvider";
 import { useDebounce } from "@/hooks/useDebounce";
-import { HttpRequestAdvancedConfigForm } from "../../httpRequest/components/HttpRequestAdvancedConfigForm";
-import { TableList } from "@/components/TableList";
-import type { KeyValue } from "@typebot.io/blocks-integrations/httpRequest/schema";
-import { KeyValueInputs } from "../../httpRequest/components/KeyValueInputs";
-import { BasicSelect } from "@/components/inputs/BasicSelect";
 import { queryClient, trpc } from "@/lib/queryClient";
+import { HttpRequestAdvancedConfigForm } from "../../httpRequest/components/HttpRequestAdvancedConfigForm";
+import { KeyValueInputs } from "../../httpRequest/components/KeyValueInputs";
 import { SaveCustomCurlTemplateDialog } from "./SaveCustomCurlTemplateDialog";
-import { BasicNumberInput } from "@/components/inputs/BasicNumberInput";
-import { DebouncedTextInput } from "@/components/inputs/DebouncedTextInput";
-import { Dialog } from "@typebot.io/ui/components/Dialog";
 
 type Props = {
   block: CustomCurlBlock;
@@ -32,7 +33,14 @@ type Props = {
 };
 
 export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
-  const { typebot, createVariable } = useTypebot();
+  const {
+    typebot,
+    createVariable,
+    updateBlock,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useTypebot();
   const [parseError, setParseError] = useState<string | undefined>();
   const [parseNonce, setParseNonce] = useState(0);
   const [testBasicAuth, setTestBasicAuth] = useState<
@@ -89,6 +97,82 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const blockIndices = useMemo(() => {
+    if (!typebot) return;
+    for (
+      let groupIndex = 0;
+      groupIndex < typebot.groups.length;
+      groupIndex += 1
+    ) {
+      const blockIndex = typebot.groups[groupIndex].blocks.findIndex(
+        (groupBlock) => groupBlock.id === block.id,
+      );
+      if (blockIndex !== -1) return { groupIndex, blockIndex };
+    }
+    return;
+  }, [block.id, typebot]);
+
+  const syncItemsWithButtons = (nextButtons: QuickReplyButton[]) => {
+    if (!blockIndices) return;
+    const existingItems = (block.items ?? []) as ButtonItem[];
+
+    if (existingItems.length > nextButtons.length) {
+      for (let i = existingItems.length - 1; i >= nextButtons.length; i -= 1) {
+        deleteItem({ ...blockIndices, itemIndex: i });
+      }
+    }
+
+    nextButtons.forEach((button, index) => {
+      const nextContent = button.text ?? button.id ?? "";
+      const nextValue = button.id ?? undefined;
+      const existingItem = existingItems[index];
+      if (existingItem) {
+        if (
+          existingItem.content !== nextContent ||
+          existingItem.value !== nextValue
+        ) {
+          updateItem(
+            { ...blockIndices, itemIndex: index },
+            { content: nextContent, value: nextValue },
+          );
+        }
+      } else {
+        createItem(
+          { content: nextContent, value: nextValue },
+          { ...blockIndices, itemIndex: index },
+        );
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (templateType !== "Quick Reply") return;
+    if (!blockIndices) return;
+    if (block.items) return;
+    updateBlock(blockIndices, { items: [] });
+  }, [block.items, blockIndices, templateType, updateBlock]);
+
+  useEffect(() => {
+    if (templateType !== "Quick Reply") return;
+    if (!block.items) return;
+    const nextButtons = (block.items as ButtonItem[]).map((item) => ({
+      text: item.content,
+      id: item.value,
+    }));
+    if (!areQuickReplyButtonsEqual(nextButtons, quickReplyButtons)) {
+      onOptionsChange({
+        ...block.options,
+        quickReplyButtons: nextButtons,
+      });
+    }
+  }, [
+    block.items,
+    block.options,
+    onOptionsChange,
+    quickReplyButtons,
+    templateType,
+  ]);
+
   const updateBodyParams = (nextBodyParams: KeyValue[]) => {
     const mergedBodyParams = buildMergedBodyParams(
       nextBodyParams,
@@ -105,13 +189,15 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       isCustomBody:
         body !== ""
           ? true
-          : block.options?.isCustomBody ??
-            defaultHttpRequestBlockOptions.isCustomBody,
+          : (block.options?.isCustomBody ??
+            defaultHttpRequestBlockOptions.isCustomBody),
       contentVariablesParams,
     });
   };
 
-  const updateContentVariablesParams = (nextContentVariablesParams: KeyValue[]) => {
+  const updateContentVariablesParams = (
+    nextContentVariablesParams: KeyValue[],
+  ) => {
     const mergedBodyParams = buildMergedBodyParams(
       bodyParams,
       nextContentVariablesParams,
@@ -128,18 +214,24 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       isCustomBody:
         body !== ""
           ? true
-          : block.options?.isCustomBody ??
-            defaultHttpRequestBlockOptions.isCustomBody,
+          : (block.options?.isCustomBody ??
+            defaultHttpRequestBlockOptions.isCustomBody),
     });
   };
 
   const updateTemplateType = (value: CustomCurlTemplateType) => {
+    const nextButtons =
+      value === "Quick Reply"
+        ? buildQuickReplyButtons(1, quickReplyButtons)
+        : undefined;
     onOptionsChange({
       ...block.options,
       templateType: value,
-      quickReplyButtons:
-        value === "Quick Reply" ? quickReplyButtons : undefined,
+      quickReplyButtons: nextButtons,
     });
+    if (value === "Quick Reply" && nextButtons) {
+      syncItemsWithButtons(nextButtons);
+    }
   };
 
   const updateQuickReplyButtonCount = (count?: number) => {
@@ -153,6 +245,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       ...block.options,
       quickReplyButtons: nextButtons,
     });
+    syncItemsWithButtons(nextButtons);
   };
 
   const updateQuickReplyButton = (
@@ -166,6 +259,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       ...block.options,
       quickReplyButtons: nextButtons,
     });
+    syncItemsWithButtons(nextButtons);
   };
 
   const previewText = useMemo(
@@ -217,8 +311,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       sampleValues,
       bodyParams,
       basicAuth,
-    } =
-      result.data;
+    } = result.data;
     setParseError(undefined);
     setLocalCurlCommand(curlCommand);
     setLocalCurlCommand(curlCommand);
@@ -266,20 +359,22 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       isCustomBody:
         httpRequest.body !== undefined
           ? true
-          : block.options?.isCustomBody ??
-            defaultHttpRequestBlockOptions.isCustomBody,
+          : (block.options?.isCustomBody ??
+            defaultHttpRequestBlockOptions.isCustomBody),
     };
     if (templateOverrides) {
       nextOptions.templateType =
         templateOverrides.templateType ?? block.options?.templateType;
       nextOptions.templateBodyPreview =
-        templateOverrides.templateBodyPreview ?? block.options?.templateBodyPreview;
+        templateOverrides.templateBodyPreview ??
+        block.options?.templateBodyPreview;
       nextOptions.templateImageUrl =
         templateOverrides.templateImageUrl ?? block.options?.templateImageUrl;
       nextOptions.quickReplyButtons =
         templateOverrides.quickReplyButtons ?? block.options?.quickReplyButtons;
       nextOptions.isExecutedOnClient =
-        templateOverrides.isExecutedOnClient ?? block.options?.isExecutedOnClient;
+        templateOverrides.isExecutedOnClient ??
+        block.options?.isExecutedOnClient;
       nextOptions.timeout = templateOverrides.timeout ?? block.options?.timeout;
     }
     onOptionsChange(nextOptions);
@@ -304,8 +399,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       sampleValues,
       bodyParams,
       basicAuth,
-    } =
-      result.data;
+    } = result.data;
     setParseError(undefined);
 
     const variableIdsByName = new Map<string, string | undefined>();
@@ -353,8 +447,8 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
       isCustomBody:
         httpRequest.body !== undefined
           ? true
-          : block.options?.isCustomBody ??
-            defaultHttpRequestBlockOptions.isCustomBody,
+          : (block.options?.isCustomBody ??
+            defaultHttpRequestBlockOptions.isCustomBody),
     });
     if (basicAuth) setTestBasicAuth(basicAuth);
     setParseNonce((value) => value + 1);
@@ -399,9 +493,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
           {selectedTemplateId && (
             <Button
               variant="secondary"
-              onClick={() =>
-                deleteTemplate({ templateId: selectedTemplateId })
-              }
+              onClick={() => deleteTemplate({ templateId: selectedTemplateId })}
             >
               Delete
             </Button>
@@ -441,9 +533,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
             onOptionsChange({ ...block.options, templateBodyPreview: value })
           }
         />
-        {previewText && (
-          <Field.Description>{previewText}</Field.Description>
-        )}
+        {previewText && <Field.Description>{previewText}</Field.Description>}
       </Field.Root>
       <Field.Root className="flex flex-col gap-2">
         <Field.Label>Template image URL</Field.Label>
@@ -455,10 +545,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
               onOptionsChange({ ...block.options, templateImageUrl: value })
             }
           />
-          <Button
-            variant="secondary"
-            onClick={handleSelectImageClick}
-          >
+          <Button variant="secondary" onClick={handleSelectImageClick}>
             Choose image
           </Button>
           <Button
@@ -559,7 +646,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
                 <BasicNumberInput
                   key={`quick-reply-count-${quickReplyButtons.length}`}
                   defaultValue={quickReplyButtons.length}
-                  min={0}
+                  min={1}
                   max={10}
                   onValueChange={updateQuickReplyButtonCount}
                   withVariableButton={false}
@@ -573,6 +660,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
                   <DebouncedTextInput
                     defaultValue={button.text}
                     placeholder="Button text"
+                    debounceTimeout={0}
                     onValueChange={(value) =>
                       updateQuickReplyButton(index, { text: value })
                     }
@@ -580,6 +668,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
                   <DebouncedTextInput
                     defaultValue={button.id}
                     placeholder="Button ID"
+                    debounceTimeout={0}
                     onValueChange={(value) =>
                       updateQuickReplyButton(index, { id: value })
                     }
@@ -727,4 +816,16 @@ const buildQuickReplyButtons = (
     next.push({ id: "", text: "" });
   }
   return next;
+};
+
+const areQuickReplyButtonsEqual = (
+  left: QuickReplyButton[],
+  right: QuickReplyButton[],
+) => {
+  if (left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index]?.text !== right[index]?.text) return false;
+    if (left[index]?.id !== right[index]?.id) return false;
+  }
+  return true;
 };

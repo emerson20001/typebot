@@ -1,7 +1,11 @@
 import { blockBaseSchema } from "@typebot.io/blocks-base/schemas";
+import { buttonItemSchemas } from "@typebot.io/blocks-inputs/choice/schema";
 import { z } from "@typebot.io/zod";
 import { IntegrationBlockType } from "../constants";
-import { httpRequestOptionsSchemas, keyValueSchema } from "../httpRequest/schema";
+import {
+  httpRequestOptionsSchemas,
+  keyValueSchema,
+} from "../httpRequest/schema";
 
 const customCurlTemplateTypes = [
   "Text",
@@ -42,6 +46,7 @@ const customCurlBlockV5Schema = blockBaseSchema.merge(
   z.object({
     type: z.enum([IntegrationBlockType.CUSTOM_CURL]),
     options: customCurlOptionsSchemas.v5.optional(),
+    items: z.array(buttonItemSchemas.v5).optional(),
   }),
 );
 
@@ -50,6 +55,7 @@ export const customCurlBlockSchemas = {
   v6: customCurlBlockV5Schema.merge(
     z.object({
       options: customCurlOptionsSchemas.v6.optional(),
+      items: z.array(buttonItemSchemas.v6).optional(),
     }),
   ),
 };

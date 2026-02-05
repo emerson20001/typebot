@@ -6,6 +6,7 @@ import type {
   BlockWithItems,
 } from "@typebot.io/blocks-core/schemas/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 
 const parseDefaultItems = (type: BlockWithItems["type"]): ItemV6[] => {
@@ -14,6 +15,8 @@ const parseDefaultItems = (type: BlockWithItems["type"]): ItemV6[] => {
     case InputBlockType.PICTURE_CHOICE:
     case LogicBlockType.CONDITION:
       return [{ id: createId() }];
+    case IntegrationBlockType.CUSTOM_CURL:
+      return [];
     case InputBlockType.CARDS:
       return [
         {

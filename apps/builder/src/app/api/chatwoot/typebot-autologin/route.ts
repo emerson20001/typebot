@@ -1,6 +1,6 @@
-import { randomUUID } from "crypto";
 import prisma from "@typebot.io/prisma";
-import { NextResponse, type NextRequest } from "next/server";
+import { randomUUID } from "crypto";
+import { type NextRequest, NextResponse } from "next/server";
 
 const THIRTY_DAYS_IN_MS = 1000 * 60 * 60 * 24 * 30;
 const TYPEBOT_AUTOLOGIN_COMMAND = "typebotAutoLoginByTypebotId";
@@ -29,10 +29,7 @@ export const POST = async (req: NextRequest) => {
   const typebotId = payload.typebotId?.trim();
 
   if (payload.command !== TYPEBOT_AUTOLOGIN_COMMAND || !typebotId) {
-    return NextResponse.json(
-      { message: "Invalid payload" },
-      { status: 400 },
-    );
+    return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
   }
 
   const typebot = await prisma.typebot.findUnique({
@@ -115,13 +112,18 @@ export const POST = async (req: NextRequest) => {
 
 export const DELETE = async (req: NextRequest) => {
   if (req.headers.get("x-typebot-iframe-guard") !== "1") {
-    return NextResponse.json({ message: "Invalid guard request" }, { status: 400 });
+    return NextResponse.json(
+      { message: "Invalid guard request" },
+      { status: 400 },
+    );
   }
 
   const sessionToken =
     req.cookies.get("__Secure-authjs.session-token")?.value ??
     req.cookies.get("authjs.session-token")?.value;
-  const iframeSessionToken = req.cookies.get(IFRAME_AUTOLOGIN_SESSION_COOKIE)?.value;
+  const iframeSessionToken = req.cookies.get(
+    IFRAME_AUTOLOGIN_SESSION_COOKIE,
+  )?.value;
 
   const isIframeAutologinSession =
     Boolean(sessionToken) &&

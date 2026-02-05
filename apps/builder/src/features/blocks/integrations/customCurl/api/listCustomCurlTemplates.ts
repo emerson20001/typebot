@@ -85,20 +85,22 @@ export const listCustomCurlTemplates = authenticatedProcedure
     };
   });
 
-const templateTypeLabelByDbValue: Record<string, (typeof customCurlTemplateTypeLabels)[number]> =
-  {
-    Text: "Text",
-    Media: "Media",
-    ListPicker: "List Picker",
-    CallToAction: "Call to action",
-    QuickReply: "Quick Reply",
-    Card: "Card",
-    Catalog: "Catalog",
-    Carousel: "Carousel",
-    WhatsAppCard: "WhatsApp Card",
-    Authentication: "Authentication",
-    Flows: "Flows",
-  };
+const templateTypeLabelByDbValue: Record<
+  string,
+  (typeof customCurlTemplateTypeLabels)[number]
+> = {
+  Text: "Text",
+  Media: "Media",
+  ListPicker: "List Picker",
+  CallToAction: "Call to action",
+  QuickReply: "Quick Reply",
+  Card: "Card",
+  Catalog: "Catalog",
+  Carousel: "Carousel",
+  WhatsAppCard: "WhatsApp Card",
+  Authentication: "Authentication",
+  Flows: "Flows",
+};
 
 const mapTemplateTypeToLabel = (value: string) =>
   templateTypeLabelByDbValue[value] ?? "Text";

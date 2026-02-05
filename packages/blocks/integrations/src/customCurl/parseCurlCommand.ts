@@ -148,10 +148,7 @@ const parseHeader = (header: string): CurlHeader | undefined => {
 const parseDataEntry = (
   raw: string,
   isUrlEncoded: boolean,
-):
-  | { entry: DataEntry }
-  | { entry: RawDataEntry }
-  | { error: string } => {
+): { entry: DataEntry } | { entry: RawDataEntry } | { error: string } => {
   if (raw.startsWith("@"))
     return { error: "File inputs are not supported in CURL commands." };
   const separatorIndex = raw.indexOf("=");
@@ -352,8 +349,7 @@ const buildContentVariablesParams = (
 export const parseCurlCommand = (command: string): ParseCurlResult => {
   if (typeof command !== "string")
     return { error: "CURL command must be a string." };
-  if (command.trim() === "")
-    return { error: "CURL command cannot be empty." };
+  if (command.trim() === "") return { error: "CURL command cannot be empty." };
 
   const normalizedCommand = command.replace(/\\\r?\n/g, " ");
   const tokenized = tokenizeCurlCommand(normalizedCommand);
@@ -378,8 +374,7 @@ export const parseCurlCommand = (command: string): ParseCurlResult => {
       const value = seekValue(index);
       if (!value) return { error: "Missing HTTP method after -X." };
       const parsedMethod = parseMethod(value);
-      if (!parsedMethod)
-        return { error: `Unsupported HTTP method: ${value}` };
+      if (!parsedMethod) return { error: `Unsupported HTTP method: ${value}` };
       method = parsedMethod;
       index += 1;
       continue;
@@ -557,7 +552,8 @@ export const parseCurlCommand = (command: string): ParseCurlResult => {
   }
 
   if (dataEntries.length > 0) {
-    const contentVariablesJson = extractContentVariablesJsonFromCommand(command);
+    const contentVariablesJson =
+      extractContentVariablesJsonFromCommand(command);
     contentVariablesParams = buildContentVariablesParams(contentVariablesJson);
     const dataObject = dataEntries.reduce<Record<string, string>>(
       (acc, entry) => {

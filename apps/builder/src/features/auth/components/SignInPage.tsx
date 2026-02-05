@@ -1,6 +1,6 @@
 import { useTranslate } from "@tolgee/react";
-import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
 import { Seo } from "@/components/Seo";
 import { TextLink } from "@/components/TextLink";
 import { SignInForm } from "./SignInForm";
@@ -46,10 +46,14 @@ export const SignInPage = ({ type }: Props) => {
       return data as { command?: string; typebotId?: string };
     };
 
-    const handleTypebotAutoLogin = async (
-      payload: { command?: string; typebotId?: string },
-    ) => {
-      if (payload.command !== TYPEBOT_AUTO_LOGIN_COMMAND || !payload.typebotId) {
+    const handleTypebotAutoLogin = async (payload: {
+      command?: string;
+      typebotId?: string;
+    }) => {
+      if (
+        payload.command !== TYPEBOT_AUTO_LOGIN_COMMAND ||
+        !payload.typebotId
+      ) {
         return;
       }
 

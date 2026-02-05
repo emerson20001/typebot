@@ -7,6 +7,7 @@ import type { CardsItem } from "@typebot.io/blocks-inputs/cards/schema";
 import type { ButtonItem } from "@typebot.io/blocks-inputs/choice/schema";
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import type { PictureChoiceItem } from "@typebot.io/blocks-inputs/pictureChoice/schema";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import type { ConditionItem } from "@typebot.io/blocks-logic/condition/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import type { JSX } from "react";
@@ -34,6 +35,15 @@ export const ItemNodeContent = ({
 }: Props): JSX.Element | null => {
   switch (blockType) {
     case InputBlockType.CHOICE:
+      return (
+        <ButtonsItemNode
+          item={item as ButtonItem}
+          key={`${item.id}-${(item as ButtonItem).content}`}
+          isMouseOver={isMouseOver}
+          indices={indices}
+        />
+      );
+    case IntegrationBlockType.CUSTOM_CURL:
       return (
         <ButtonsItemNode
           item={item as ButtonItem}

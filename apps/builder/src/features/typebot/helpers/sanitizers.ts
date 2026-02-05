@@ -39,7 +39,7 @@ export const sanitizeSettings = (
     : undefined,
 });
 
-export const sanitizeGroups = async (
+export async function sanitizeGroups(
   groups: Typebot["groups"],
   {
     enableSafetyFlags,
@@ -48,8 +48,8 @@ export const sanitizeGroups = async (
     enableSafetyFlags?: boolean;
     workspace: Pick<Workspace, "id" | "plan">;
   },
-): Promise<Typebot["groups"]> =>
-  Promise.all(
+): Promise<Typebot["groups"]> {
+  return Promise.all(
     groups.map(async (group) => ({
       ...group,
       blocks: await Promise.all(
@@ -59,6 +59,7 @@ export const sanitizeGroups = async (
       ),
     })),
   ) as Promise<Typebot["groups"]>;
+}
 
 const sanitizeBlock = async (
   block: Block,
