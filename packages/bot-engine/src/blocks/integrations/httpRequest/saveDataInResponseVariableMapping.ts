@@ -1,4 +1,4 @@
-import type { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import type { SessionState } from "@typebot.io/chat-session/schemas";
 import { byId } from "@typebot.io/lib/utils";

@@ -1,3 +1,8 @@
+import { BubbleBlockType } from "@typebot.io/blocks-bubbles/constants";
+import type { ChoiceInputBlock } from "@typebot.io/blocks-inputs/choice/schema";
+import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
+import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
+import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import {
   defaultHttpRequestAttributes,
   defaultTimeout,
@@ -11,7 +16,6 @@ import type {
   HttpResponse,
   KeyValue,
 } from "@typebot.io/blocks-integrations/httpRequest/schema";
-import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
 import type { MakeComBlock } from "@typebot.io/blocks-integrations/makeCom/schema";
 import type { PabblyConnectBlock } from "@typebot.io/blocks-integrations/pabblyConnect/schema";
 import type { ZapierBlock } from "@typebot.io/blocks-integrations/zapier/schema";
@@ -23,6 +27,7 @@ import { decrypt } from "@typebot.io/credentials/decrypt";
 import { getCredentials } from "@typebot.io/credentials/getCredentials";
 import { httpProxyCredentialsSchema } from "@typebot.io/credentials/schemas";
 import { env } from "@typebot.io/env";
+import { createId } from "@typebot.io/lib/createId";
 import { JSONParse } from "@typebot.io/lib/JSONParse";
 import { ky, rebuildFetchWithoutChunkedEncoding } from "@typebot.io/lib/ky";
 import { parseUnknownError } from "@typebot.io/lib/parseUnknownError";
@@ -41,6 +46,7 @@ import type { Variable } from "@typebot.io/variables/schemas";
 import { HTTPError, type Options, TimeoutError } from "ky";
 import { stringify } from "qs";
 import { ProxyAgent } from "undici";
+import { formatInputForChatResponse } from "../../../formatInputForChatResponse";
 import type { ExecuteIntegrationResponse } from "../../../types";
 import { saveDataInResponseVariableMapping } from "./saveDataInResponseVariableMapping";
 
@@ -129,6 +135,23 @@ export const executeHttpRequestBlock = async (
     timeout: block.options?.timeout,
   });
 
+  const customCurlMessage =
+    "type" in block && block.type === IntegrationBlockType.CUSTOM_CURL
+      ? buildCustomCurlMessage(block)
+      : undefined;
+  const customCurlInputBlock =
+    "type" in block && block.type === IntegrationBlockType.CUSTOM_CURL
+      ? buildCustomCurlQuickReplyInputBlock(block)
+      : undefined;
+  const customCurlInput = customCurlInputBlock
+    ? await formatInputForChatResponse(customCurlInputBlock, {
+        variables: state.typebotsQueue[0].typebot.variables,
+        isPreview: isNotDefined(state.typebotsQueue[0].resultId),
+        workspaceId: state.workspaceId,
+        sessionStore,
+      })
+    : undefined;
+
   return {
     ...saveDataInResponseVariableMapping({
       state,
@@ -140,6 +163,8 @@ export const executeHttpRequestBlock = async (
       response: httpRequestResponse,
       sessionStore,
     }),
+    messages: customCurlMessage ? [customCurlMessage] : undefined,
+    input: customCurlInput,
     startTimeShouldBeUpdated,
   };
 };
@@ -469,4 +494,69 @@ const parseFormDataBody = (body: object) => {
     searchParams.set(key, value);
   });
   return searchParams;
+};
+
+const buildCustomCurlMessage = (block: CustomCurlBlock) => {
+  const curlCommand = block.options?.curlCommand ?? "";
+  return {
+    id: createId(),
+    type: BubbleBlockType.TEXT,
+    content: {
+      type: "richText",
+      templateType: formatTemplateType(block.options?.templateType),
+      richText: [
+        {
+          id: createId(),
+          type: "p",
+          children: [
+            {
+              text: curlCommand,
+            },
+          ],
+        },
+      ],
+    },
+  };
+};
+
+const buildCustomCurlQuickReplyInputBlock = (
+  block: CustomCurlBlock,
+): ChoiceInputBlock | undefined => {
+  if (block.options?.templateType !== "Quick Reply") return undefined;
+  const itemsFromBlock = (block.items ?? []) as ChoiceInputBlock["items"];
+  const items =
+    itemsFromBlock.length > 0
+      ? itemsFromBlock
+          .map((item) => ({
+            id: item.id,
+            content: item.content,
+            value: item.value,
+            outgoingEdgeId: item.outgoingEdgeId,
+          }))
+          .filter((item) => item.content || item.value)
+      : (block.options?.quickReplyButtons ?? [])
+          .map((button) => ({
+            id: createId(),
+            content: button.text ?? button.id ?? "",
+            value: button.id ?? undefined,
+          }))
+          .filter((item) => item.content || item.value);
+  if (items.length === 0) return undefined;
+  return {
+    id: block.id,
+    type: InputBlockType.CHOICE,
+    items,
+    options: {
+      isMultipleChoice: false,
+    },
+  };
+};
+
+const formatTemplateType = (value?: string) => {
+  if (!value) return undefined;
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 };

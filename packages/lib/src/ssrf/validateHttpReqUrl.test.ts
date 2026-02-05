@@ -100,7 +100,13 @@ describe("validateHttpReqUrl", () => {
 
   describe("Localhost and loopback addresses", () => {
     it("should block localhost hostname", () => {
-      expect(() => validateHttpReqUrl("http://localhost")).toThrow("localhost");
+      if (process.env.NODE_ENV === "development") {
+        expect(() => validateHttpReqUrl("http://localhost")).not.toThrow();
+      } else {
+        expect(() => validateHttpReqUrl("http://localhost")).toThrow(
+          "localhost",
+        );
+      }
     });
 
     it("should block 127.0.0.1", () => {

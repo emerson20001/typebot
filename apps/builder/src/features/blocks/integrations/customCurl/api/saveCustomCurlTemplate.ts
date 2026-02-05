@@ -98,9 +98,11 @@ export const saveCustomCurlTemplate = authenticatedProcedure
           curlCommand: customCurlTemplate.curlCommand,
           type: mapTemplateTypeToLabel(customCurlTemplate.type),
           quickReplyButtons: input.quickReplyButtons,
-          templateBodyPreview: customCurlTemplate.templateBodyPreview ?? undefined,
+          templateBodyPreview:
+            customCurlTemplate.templateBodyPreview ?? undefined,
           templateImageUrl: customCurlTemplate.templateImageUrl ?? undefined,
-          isExecutedOnClient: customCurlTemplate.isExecutedOnClient ?? undefined,
+          isExecutedOnClient:
+            customCurlTemplate.isExecutedOnClient ?? undefined,
           timeout: customCurlTemplate.timeout ?? undefined,
         },
       };
@@ -138,7 +140,8 @@ export const saveCustomCurlTemplate = authenticatedProcedure
         curlCommand: customCurlTemplate.curlCommand,
         type: mapTemplateTypeToLabel(customCurlTemplate.type),
         quickReplyButtons: input.quickReplyButtons,
-        templateBodyPreview: customCurlTemplate.templateBodyPreview ?? undefined,
+        templateBodyPreview:
+          customCurlTemplate.templateBodyPreview ?? undefined,
         templateImageUrl: customCurlTemplate.templateImageUrl ?? undefined,
         isExecutedOnClient: customCurlTemplate.isExecutedOnClient ?? undefined,
         timeout: customCurlTemplate.timeout ?? undefined,

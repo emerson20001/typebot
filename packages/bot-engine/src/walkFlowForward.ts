@@ -359,6 +359,30 @@ const executeGroup = async (
       }
     }
 
+    if (
+      "messages" in logicOrIntegrationExecutionResponse &&
+      logicOrIntegrationExecutionResponse.messages?.length
+    ) {
+      messages.push(...logicOrIntegrationExecutionResponse.messages);
+    }
+    if (
+      "input" in logicOrIntegrationExecutionResponse &&
+      logicOrIntegrationExecutionResponse.input
+    ) {
+      return {
+        messages,
+        input: logicOrIntegrationExecutionResponse.input,
+        newSessionState: {
+          ...newSessionState,
+          currentBlockId: block.id,
+        },
+        clientSideActions,
+        logs,
+        newSetVariableHistoryItems,
+        lastBubbleBlockId,
+      };
+    }
+
     if (logicOrIntegrationExecutionResponse.outgoingEdgeId) {
       nextEdge = {
         id: logicOrIntegrationExecutionResponse.outgoingEdgeId,

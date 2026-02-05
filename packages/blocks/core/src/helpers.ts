@@ -103,12 +103,14 @@ export const blockTypeHasItems = (
   | LogicBlockType.CONDITION
   | InputBlockType.CHOICE
   | LogicBlockType.AB_TEST
-  | InputBlockType.CARDS =>
+  | InputBlockType.CARDS
+  | IntegrationBlockType.CUSTOM_CURL =>
   type === LogicBlockType.CONDITION ||
   type === InputBlockType.CHOICE ||
   type === LogicBlockType.AB_TEST ||
   type === InputBlockType.PICTURE_CHOICE ||
-  type === InputBlockType.CARDS;
+  type === InputBlockType.CARDS ||
+  type === IntegrationBlockType.CUSTOM_CURL;
 
 export const blockHasItems = (block: Block): block is BlockWithItems =>
   "items" in block && block.items !== undefined && block.items !== null;

@@ -21,6 +21,8 @@ export type ExecuteIntegrationResponse = {
   startTimeShouldBeUpdated?: boolean;
   customEmbedBubble?: CustomEmbedBubble;
   newSetVariableHistory?: SetVariableHistoryItem[];
+  messages?: ContinueChatResponse["messages"];
+  input?: ContinueChatResponse["input"];
 } & Pick<ContinueChatResponse, "clientSideActions" | "logs">;
 
 export type SuccessReply = {

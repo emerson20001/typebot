@@ -39,7 +39,9 @@ type Props = {
   onHttpRequestChange: (httpRequest: HttpRequest) => void;
   onOptionsChange: (options: HttpRequestBlock["options"]) => void;
   onNewTestResponse?: () => void;
-  getTestRequestOverrides?: () => { basicAuth?: { username: string; password: string } } | undefined;
+  getTestRequestOverrides?: () =>
+    | { basicAuth?: { username: string; password: string } }
+    | undefined;
   renderBodyParameters?: () => JSX.Element;
   hideCustomBodyToggle?: boolean;
   hideBodyEditor?: boolean;
@@ -248,7 +250,9 @@ export const HttpRequestAdvancedConfigForm = ({
               </Accordion.Item>
               {!hideVariablesForTest && (
                 <Accordion.Item>
-                  <Accordion.Trigger>Variable values for test</Accordion.Trigger>
+                  <Accordion.Trigger>
+                    Variable values for test
+                  </Accordion.Trigger>
                   <Accordion.Panel>
                     <TableList<VariableForTest>
                       initialItems={options?.variablesForTest}

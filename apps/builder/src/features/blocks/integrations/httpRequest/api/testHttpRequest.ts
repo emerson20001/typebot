@@ -55,148 +55,149 @@ export const testHttpRequest = authenticatedProcedure
   )
   .mutation(
     async ({ input: { typebotId, blockId, variables, basicAuth }, ctx }) => {
-    const typebot = await prisma.typebot.findFirst({
-      where: canReadTypebots(typebotId, ctx.user),
-      select: {
-        version: true,
-        groups: true,
-        webhooks: true,
-        variables: true,
-        edges: true,
-        workspaceId: true,
-      },
-    });
-
-    if (!typebot)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Typebot not found",
+      const typebot = await prisma.typebot.findFirst({
+        where: canReadTypebots(typebotId, ctx.user),
+        select: {
+          version: true,
+          groups: true,
+          webhooks: true,
+          variables: true,
+          edges: true,
+          workspaceId: true,
+        },
       });
 
-    const parsedTypebot = {
-      groups: parseGroups(typebot.groups, {
-        typebotVersion: typebot.version,
-      }),
-      variables: variableSchema.array().parse(typebot.variables),
-      edges: edgeSchema.array().parse(typebot.edges),
-    };
+      if (!typebot)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Typebot not found",
+        });
 
-    const block = parsedTypebot.groups
-      .flatMap<Block>((g) => g.blocks)
-      .find(byId(blockId));
+      const parsedTypebot = {
+        groups: parseGroups(typebot.groups, {
+          typebotVersion: typebot.version,
+        }),
+        variables: variableSchema.array().parse(typebot.variables),
+        edges: edgeSchema.array().parse(typebot.edges),
+      };
 
-    const isCustomCurlBlock = (block: Block): block is CustomCurlBlock =>
-      block.type === IntegrationBlockType.CUSTOM_CURL;
+      const block = parsedTypebot.groups
+        .flatMap<Block>((g) => g.blocks)
+        .find(byId(blockId));
 
-    if (!block || (!isHttpRequestBlock(block) && !isCustomCurlBlock(block)))
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "HTTP request block not found",
+      const isCustomCurlBlock = (block: Block): block is CustomCurlBlock =>
+        block.type === IntegrationBlockType.CUSTOM_CURL;
+
+      if (!block || (!isHttpRequestBlock(block) && !isCustomCurlBlock(block)))
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "HTTP request block not found",
+        });
+
+      const webhookId = "webhookId" in block ? block.webhookId : undefined;
+      const webhook = httpRequestV5Schema
+        .omit({
+          id: true,
+        })
+        .parse(
+          block.options?.webhook ??
+            typebot.webhooks.find((w) => {
+              if ("id" in w) return w.id === webhookId;
+              return false;
+            }),
+        );
+
+      if (!webhook)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Couldn't find webhook",
+        });
+
+      const webhookForTest = basicAuth
+        ? {
+            ...webhook,
+            headers: [
+              ...(webhook.headers ?? []).filter(
+                (header) => header.key?.toLowerCase() !== "authorization",
+              ),
+              {
+                id: "basic-auth",
+                key: "Authorization",
+                value: `Basic ${basicAuth.username}:${basicAuth.password}`,
+              },
+            ],
+          }
+        : webhook;
+
+      const { group } = getBlockById(blockId, parsedTypebot.groups);
+      const linkedTypebots = await fetchLinkedChildTypebots({
+        isPreview: !("typebotId" in typebot),
+        typebots: [parsedTypebot],
+        userId: ctx.user.id,
+      })([]);
+
+      const mergedVariables = parsedTypebot.variables.map((v) => {
+        const matchingVariable = variables?.find(byId(v.id));
+        if (!matchingVariable) return v;
+        // Convert unknown value to the expected Variable value type
+        const value = matchingVariable.value;
+        return {
+          ...v,
+          value:
+            typeof value === "string" || Array.isArray(value) || value == null
+              ? value
+              : String(value),
+        };
       });
 
-    const webhookId = "webhookId" in block ? block.webhookId : undefined;
-    const webhook = httpRequestV5Schema
-      .omit({
-        id: true,
-      })
-      .parse(
-        block.options?.webhook ??
-          typebot.webhooks.find((w) => {
-            if ("id" in w) return w.id === webhookId;
-            return false;
-          }),
+      const answers = arrayify(
+        await parseSampleResult(parsedTypebot, linkedTypebots)(
+          group.id,
+          mergedVariables,
+        ),
       );
 
-    if (!webhook)
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Couldn't find webhook",
+      const mockedSessionId = "test-webhook";
+      const sessionStore = getSessionStore(mockedSessionId);
+      const parsedWebhook = await parseHttpRequestAttributes({
+        httpRequest: webhookForTest,
+        isCustomBody: block.options?.isCustomBody,
+        variables: mergedVariables,
+        sessionStore,
+        answers,
+        proxy: block.options?.proxyCredentialsId
+          ? {
+              credentialsId: block.options.proxyCredentialsId,
+              workspaceId: typebot.workspaceId,
+            }
+          : undefined,
+      });
+      deleteSessionStore(mockedSessionId);
+
+      if (!parsedWebhook)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Couldn't parse webhook attributes",
+        });
+
+      if (basicAuth) {
+        const encoded = Buffer.from(
+          `${basicAuth.username}:${basicAuth.password}`,
+        ).toString("base64");
+        parsedWebhook.headers = {
+          ...(parsedWebhook.headers ?? {}),
+          Authorization: `Basic ${encoded}`,
+        };
+        parsedWebhook.basicAuth = {};
+      }
+
+      const { response } = await executeHttpRequest(parsedWebhook, {
+        timeout: block.options?.timeout,
       });
 
-    const webhookForTest = basicAuth
-      ? {
-          ...webhook,
-          headers: [
-            ...(webhook.headers ?? []).filter(
-              (header) => header.key?.toLowerCase() !== "authorization",
-            ),
-            {
-              id: "basic-auth",
-              key: "Authorization",
-              value: `Basic ${basicAuth.username}:${basicAuth.password}`,
-            },
-          ],
-        }
-      : webhook;
-
-    const { group } = getBlockById(blockId, parsedTypebot.groups);
-    const linkedTypebots = await fetchLinkedChildTypebots({
-      isPreview: !("typebotId" in typebot),
-      typebots: [parsedTypebot],
-      userId: ctx.user.id,
-    })([]);
-
-    const mergedVariables = parsedTypebot.variables.map((v) => {
-      const matchingVariable = variables?.find(byId(v.id));
-      if (!matchingVariable) return v;
-      // Convert unknown value to the expected Variable value type
-      const value = matchingVariable.value;
-      return {
-        ...v,
-        value:
-          typeof value === "string" || Array.isArray(value) || value == null
-            ? value
-            : String(value),
-      };
-    });
-
-    const answers = arrayify(
-      await parseSampleResult(parsedTypebot, linkedTypebots)(
-        group.id,
-        mergedVariables,
-      ),
-    );
-
-    const mockedSessionId = "test-webhook";
-    const sessionStore = getSessionStore(mockedSessionId);
-    const parsedWebhook = await parseHttpRequestAttributes({
-      httpRequest: webhookForTest,
-      isCustomBody: block.options?.isCustomBody,
-      variables: mergedVariables,
-      sessionStore,
-      answers,
-      proxy: block.options?.proxyCredentialsId
-        ? {
-            credentialsId: block.options.proxyCredentialsId,
-            workspaceId: typebot.workspaceId,
-          }
-        : undefined,
-    });
-    deleteSessionStore(mockedSessionId);
-
-    if (!parsedWebhook)
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Couldn't parse webhook attributes",
-      });
-
-    if (basicAuth) {
-      const encoded = Buffer.from(
-        `${basicAuth.username}:${basicAuth.password}`,
-      ).toString("base64");
-      parsedWebhook.headers = {
-        ...(parsedWebhook.headers ?? {}),
-        Authorization: `Basic ${encoded}`,
-      };
-      parsedWebhook.basicAuth = {};
-    }
-
-    const { response } = await executeHttpRequest(parsedWebhook, {
-      timeout: block.options?.timeout,
-    });
-
-    return response;
-  });
+      return response;
+    },
+  );
 
 const arrayify = (
   obj: Record<string, string | boolean | undefined>,

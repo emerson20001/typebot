@@ -90,10 +90,12 @@ const textBubbleSchema = z
       z.object({
         type: z.literal("richText"),
         richText: z.any(),
+        templateType: z.string().optional(),
       }),
       z.object({
         type: z.literal("markdown"),
         markdown: z.string(),
+        templateType: z.string().optional(),
       }),
     ]),
   })
