@@ -18,7 +18,10 @@ import { ConditionItemNode } from "@/features/blocks/logic/condition/components/
 
 type Props = {
   item: Item;
-  blockType: BlockWithItems["type"] | IntegrationBlockType.CUSTOM_CURL;
+  blockType:
+    | BlockWithItems["type"]
+    | IntegrationBlockType.CUSTOM_CURL
+    | IntegrationBlockType.CUSTOM_LIST;
   indices: ItemIndices;
   isMouseOver: boolean;
   blockId: string;
@@ -44,6 +47,15 @@ export const ItemNodeContent = ({
         />
       );
     case IntegrationBlockType.CUSTOM_CURL:
+      return (
+        <ButtonsItemNode
+          item={item as ButtonItem}
+          key={`${item.id}-${(item as ButtonItem).content}`}
+          isMouseOver={isMouseOver}
+          indices={indices}
+        />
+      );
+    case IntegrationBlockType.CUSTOM_LIST:
       return (
         <ButtonsItemNode
           item={item as ButtonItem}

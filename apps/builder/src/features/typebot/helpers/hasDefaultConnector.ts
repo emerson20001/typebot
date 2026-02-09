@@ -12,9 +12,11 @@ import { isDefined } from "@typebot.io/lib/utils";
 
 export const hasDefaultConnector = (block: BlockV6) =>
   (!(
-    block.type === IntegrationBlockType.CUSTOM_CURL &&
-    "options" in block &&
-    block.options?.templateType === "Quick Reply"
+    (block.type === IntegrationBlockType.CUSTOM_CURL &&
+      "options" in block &&
+      block.options?.templateType === "Quick Reply") ||
+    (block.type === IntegrationBlockType.CUSTOM_LIST &&
+      hasCustomListOptions(block))
   ) &&
     !isChoiceInput(block) &&
     !isPictureChoiceInput(block) &&
@@ -26,3 +28,8 @@ export const hasDefaultConnector = (block: BlockV6) =>
   (block.type === InputBlockType.PICTURE_CHOICE &&
     block.options?.dynamicItems?.isEnabled &&
     block.options.dynamicItems.pictureSrcsVariableId);
+
+const hasCustomListOptions = (block: BlockV6) =>
+  block.type === IntegrationBlockType.CUSTOM_LIST &&
+  "options" in block &&
+  (block.options?.parts ?? []).some((part) => part.type === "list");

@@ -12,6 +12,7 @@ import { defaultPaymentInputOptions } from "@typebot.io/blocks-inputs/payment/co
 import type { InputBlock } from "@typebot.io/blocks-inputs/schema";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
+import type { CustomListBlock } from "@typebot.io/blocks-integrations/customList/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import type {
   ContinueChatResponse,
@@ -39,6 +40,10 @@ import type {
   SetVariableHistoryItem,
   Variable,
 } from "@typebot.io/variables/schemas";
+import {
+  buildCustomListInputBlock,
+  buildCustomListMessage,
+} from "./blocks/integrations/customList/buildCustomListMessage";
 import { saveDataInResponseVariableMapping } from "./blocks/integrations/httpRequest/saveDataInResponseVariableMapping";
 import { resumeChatCompletion } from "./blocks/integrations/legacy/openai/resumeChatCompletion";
 import { executeCommandEvent } from "./events/executeCommandEvent";
@@ -209,6 +214,107 @@ export const continueBotFlow = async (
     newSessionState = await processAndSaveAnswer(
       newSessionState,
       customCurlInputBlock,
+    )(
+      isDefined(formattedReply)
+        ? { ...reply, type: "text", text: formattedReply }
+        : reply,
+    );
+    continueReply = parsedReplyResult;
+  }
+
+  const customListInputBlock = buildCustomListInputBlockFromBlock(block, {
+    variables: newSessionState.typebotsQueue[0].typebot.variables,
+    sessionStore,
+  });
+  if (customListInputBlock && isInputMessage(reply)) {
+    const parsedReplyResult = validateAndParseInputMessage(reply, {
+      block: customListInputBlock,
+      variables: newSessionState.typebotsQueue[0].typebot.variables,
+      sessionStore,
+    });
+
+    if (
+      parsedReplyResult.status === "success" &&
+      parsedReplyResult.variablesToUpdate
+    ) {
+      const { updatedState, newSetVariableHistory } = updateVariablesInSession({
+        state: newSessionState,
+        newVariables: parsedReplyResult.variablesToUpdate,
+        currentBlockId: customListInputBlock.id,
+      });
+      newSessionState = updatedState;
+      setVariableHistory.push(...newSetVariableHistory);
+    }
+
+    const invalidReplyEvent =
+      parsedReplyResult.status === "fail"
+        ? findInvalidReplyEvent(newSessionState)
+        : undefined;
+
+    if (!skipReplyEvent && !invalidReplyEvent) {
+      const replyEvent = findReplyEvent(newSessionState);
+      if (replyEvent) {
+        const { updatedState, newSetVariableHistory } = executeReplyEvent(
+          replyEvent,
+          {
+            state: newSessionState,
+            reply,
+          },
+        );
+        newSessionState = updatedState;
+        setVariableHistory.push(...newSetVariableHistory);
+        return continueBotFlow(undefined, {
+          state: newSessionState,
+          version,
+          textBubbleContentFormat,
+          sessionStore,
+        });
+      }
+    }
+
+    if (parsedReplyResult.status === "fail") {
+      if (invalidReplyEvent) {
+        const { updatedState, newSetVariableHistory } =
+          executeInvalidReplyEvent(invalidReplyEvent, {
+            state: newSessionState,
+            reply,
+          });
+        newSessionState = updatedState;
+        setVariableHistory.push(...newSetVariableHistory);
+        return continueBotFlow(undefined, {
+          state: newSessionState,
+          version,
+          textBubbleContentFormat,
+          sessionStore,
+        });
+      }
+      const retry = await parseRetryMessage(customListInputBlock, {
+        textBubbleContentFormat,
+        sessionStore,
+        state: newSessionState,
+      });
+      const listMessage = buildCustomListMessageFromBlock(block, {
+        sessionStore,
+        variables: newSessionState.typebotsQueue[0].typebot.variables,
+      });
+      return {
+        ...retry,
+        messages: listMessage
+          ? [listMessage, ...(retry.messages ?? [])]
+          : retry.messages,
+        newSessionState,
+        visitedEdges: [],
+        setVariableHistory: [],
+      };
+    }
+
+    const formattedReply =
+      "content" in parsedReplyResult && reply?.type === "text"
+        ? parsedReplyResult.content
+        : undefined;
+    newSessionState = await processAndSaveAnswer(
+      newSessionState,
+      customListInputBlock,
     )(
       isDefined(formattedReply)
         ? { ...reply, type: "text", text: formattedReply }
@@ -895,6 +1001,35 @@ const buildCustomCurlQuickReplyInputBlock = (
     },
   };
 };
+
+const buildCustomListInputBlockFromBlock = (
+  block: Block,
+  {
+    variables,
+    sessionStore,
+  }: { variables: Variable[]; sessionStore: SessionStore },
+): ChoiceInputBlock | undefined => {
+  if (!isCustomListBlock(block)) return undefined;
+  return buildCustomListInputBlock(block, { variables, sessionStore });
+};
+
+const buildCustomListMessageFromBlock = (
+  block: Block,
+  {
+    variables,
+    sessionStore,
+  }: { variables: Variable[]; sessionStore: SessionStore },
+) => {
+  if (!isCustomListBlock(block)) return undefined;
+  return buildCustomListMessage({
+    block,
+    variables,
+    sessionStore,
+  });
+};
+
+const isCustomListBlock = (block: Block): block is CustomListBlock =>
+  block.type === IntegrationBlockType.CUSTOM_LIST;
 
 const buildCustomCurlMessage = (
   block: CustomCurlBlock | undefined,

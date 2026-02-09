@@ -1,6 +1,7 @@
 import { z } from "@typebot.io/zod";
 import { chatwootBlockSchema } from "./chatwoot/schema";
 import { customCurlBlockSchemas } from "./customCurl/schema";
+import { customListBlockSchemas } from "./customList/schema";
 import { googleAnalyticsBlockSchema } from "./googleAnalytics/schema";
 import { googleSheetsBlockSchemas } from "./googleSheets/schema";
 import { httpBlockSchemas } from "./httpRequest/schema";
@@ -22,6 +23,7 @@ const integrationBlockSchemas = [
 export const integrationBlockV5Schema = z.discriminatedUnion("type", [
   ...integrationBlockSchemas,
   customCurlBlockSchemas.v5,
+  customListBlockSchemas.v5,
   googleSheetsBlockSchemas.v5,
   makeComBlockSchemas.v5,
   pabblyConnectBlockSchemas.v5,
@@ -33,6 +35,7 @@ export type IntegrationBlockV5 = z.infer<typeof integrationBlockV5Schema>;
 export const integrationBlockV6Schema = z.discriminatedUnion("type", [
   ...integrationBlockSchemas,
   customCurlBlockSchemas.v6,
+  customListBlockSchemas.v6,
   googleSheetsBlockSchemas.v6,
   makeComBlockSchemas.v6,
   pabblyConnectBlockSchemas.v6,

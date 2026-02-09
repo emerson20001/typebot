@@ -62,6 +62,7 @@ model User {
   preferredLanguage           String?
   termsAcceptedAt             DateTime?
   customCurlTemplates         CustomCurlTemplate[]
+  customListTemplates         CustomListTemplate[]
 }
 
 model ApiToken {
@@ -424,6 +425,16 @@ model CustomCurlTemplate {
   templateImageUrl String?
   isExecutedOnClient Boolean?
   timeout Int?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CustomListTemplate {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  name       String
+  template   Json
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

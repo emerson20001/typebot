@@ -5,6 +5,7 @@ import { env } from "@typebot.io/env";
 import { isNotDefined } from "@typebot.io/lib/utils";
 import type { SessionStore } from "@typebot.io/runtime-session-store";
 import { executeChatwootBlock } from "./blocks/integrations/chatwoot/executeChatwootBlock";
+import { executeCustomListBlock } from "./blocks/integrations/customList/executeCustomListBlock";
 import { executeGoogleSheetBlock } from "./blocks/integrations/googleSheets/executeGoogleSheetBlock";
 import { executeHttpRequestBlock } from "./blocks/integrations/httpRequest/executeHttpRequestBlock";
 import { executeGoogleAnalyticsBlock } from "./blocks/integrations/legacy/googleAnalytics/executeGoogleAnalyticsBlock";
@@ -61,6 +62,10 @@ export const executeIntegration = async ({
           sessionStore,
           disableRequestTimeout: isNotDefined(env.CHAT_API_TIMEOUT),
         })),
+      };
+    case IntegrationBlockType.CUSTOM_LIST:
+      return {
+        ...(await executeCustomListBlock({ block, state, sessionStore })),
       };
     case IntegrationBlockType.OPEN_AI:
       return {

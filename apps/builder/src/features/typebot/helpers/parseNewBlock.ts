@@ -11,7 +11,8 @@ import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 
 type DefaultItemsBlockType =
   | BlockWithItems["type"]
-  | IntegrationBlockType.CUSTOM_CURL;
+  | IntegrationBlockType.CUSTOM_CURL
+  | IntegrationBlockType.CUSTOM_LIST;
 
 const parseDefaultItems = (type: DefaultItemsBlockType): ItemV6[] => {
   switch (type) {
@@ -20,6 +21,7 @@ const parseDefaultItems = (type: DefaultItemsBlockType): ItemV6[] => {
     case LogicBlockType.CONDITION:
       return [{ id: createId() }];
     case IntegrationBlockType.CUSTOM_CURL:
+    case IntegrationBlockType.CUSTOM_LIST:
       return [];
     case InputBlockType.CARDS:
       return [

@@ -22,6 +22,7 @@ import { TimeInputSettings } from "@/features/blocks/inputs/time/components/Time
 import { UrlInputSettings } from "@/features/blocks/inputs/url/components/UrlInputSettings";
 import { ChatwootSettings } from "@/features/blocks/integrations/chatwoot/components/ChatwootSettings";
 import { CustomCurlSettings } from "@/features/blocks/integrations/customCurl/components/CustomCurlSettings";
+import { CustomListSettings } from "@/features/blocks/integrations/customList/components/CustomListSettings";
 import { GoogleAnalyticsSettings } from "@/features/blocks/integrations/googleAnalytics/components/GoogleAnalyticsSettings";
 import { GoogleSheetsSettings } from "@/features/blocks/integrations/googleSheets/components/GoogleSheetsSettings";
 import { HttpRequestSettings } from "@/features/blocks/integrations/httpRequest/components/HttpRequestSettings";
@@ -323,6 +324,11 @@ export const NodeSettings = ({
     case IntegrationBlockType.CUSTOM_CURL: {
       return (
         <CustomCurlSettings block={node} onOptionsChange={updateOptions} />
+      );
+    }
+    case IntegrationBlockType.CUSTOM_LIST: {
+      return (
+        <CustomListSettings block={node} onOptionsChange={updateOptions} />
       );
     }
     case IntegrationBlockType.EMAIL: {

@@ -8,6 +8,7 @@ import type {
 import { InputBlockType } from "@typebot.io/blocks-inputs/constants";
 import { IntegrationBlockType } from "@typebot.io/blocks-integrations/constants";
 import type { CustomCurlBlock } from "@typebot.io/blocks-integrations/customCurl/schema";
+import type { CustomListBlock } from "@typebot.io/blocks-integrations/customList/schema";
 import { LogicBlockType } from "@typebot.io/blocks-logic/constants";
 import { isDefined } from "@typebot.io/lib/utils";
 import type React from "react";
@@ -28,7 +29,9 @@ import { getItemName } from "./getItemName";
 import { ItemNode } from "./ItemNode";
 
 type Props = {
-  block: (BlockWithItems | CustomCurlBlock) & { items: ItemV6[] };
+  block: (BlockWithItems | CustomCurlBlock | CustomListBlock) & {
+    items: ItemV6[];
+  };
   indices: BlockIndices;
 };
 
@@ -201,7 +204,7 @@ const DefaultItemNode = ({
   block,
   groupId,
 }: {
-  block: BlockWithItems | CustomCurlBlock;
+  block: BlockWithItems | CustomCurlBlock | CustomListBlock;
   groupId: string;
 }) => {
   const { t } = useTranslate();
@@ -225,13 +228,16 @@ const DefaultItemNode = ({
 };
 
 const checkIfDefaultItemIsNeeded = (
-  block: BlockWithItems | CustomCurlBlock,
+  block: BlockWithItems | CustomCurlBlock | CustomListBlock,
   isLastBlock: boolean,
 ) => {
   if (!isLastBlock) return false;
   if (block.outgoingEdgeId || block.type === LogicBlockType.CONDITION)
     return true;
-  if (block.type === IntegrationBlockType.CUSTOM_CURL) return true;
+  if (block.type === IntegrationBlockType.CUSTOM_CURL)
+    return block.options?.templateType === "Quick Reply";
+  if (block.type === IntegrationBlockType.CUSTOM_LIST)
+    return (block.options?.parts ?? []).some((part) => part.type === "list");
   if (block.items.length === 1) return false;
   if (block.type === InputBlockType.CARDS) {
     return block.items.some((item) =>

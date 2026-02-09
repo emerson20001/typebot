@@ -1,5 +1,6 @@
 import { authRouter } from "@/features/auth/api/router";
 import { customCurlRouter } from "@/features/blocks/integrations/customCurl/api/router";
+import { customListRouter } from "@/features/blocks/integrations/customList/api/router";
 import { googleSheetsRouter } from "@/features/blocks/integrations/googleSheets/api/router";
 import { openAIRouter } from "@/features/blocks/integrations/openai/api/router";
 import { credentialsRouter } from "@/features/credentials/api/router";
@@ -19,6 +20,7 @@ export const internalRouter = router({
   forge: forgeRouter,
   sheets: googleSheetsRouter,
   customCurl: customCurlRouter,
+  customList: customListRouter,
   telemetry: telemetryRouter,
   generateGroupTitle,
   credentials: credentialsRouter,

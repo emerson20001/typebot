@@ -189,7 +189,23 @@ const Input = (props: {
       <Match when={isButtonsBlock(props.block)} keyed>
         {(block) => (
           <Switch>
-            <Match when={!block.options?.isMultipleChoice}>
+            <Match
+              when={
+                !block.options?.isMultipleChoice && block.options?.hideButtons
+              }
+            >
+              <TextInput
+                block={{ id: block.id, type: InputBlockType.TEXT }}
+                defaultValue={getPrefilledValue()}
+                context={props.context}
+                onSubmit={props.onSubmit}
+              />
+            </Match>
+            <Match
+              when={
+                !block.options?.isMultipleChoice && !block.options?.hideButtons
+              }
+            >
               <Buttons
                 chunkIndex={props.chunkIndex}
                 defaultItems={block.items}

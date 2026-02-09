@@ -110,7 +110,8 @@ export const blockTypeHasItems = (
   type === LogicBlockType.AB_TEST ||
   type === InputBlockType.PICTURE_CHOICE ||
   type === InputBlockType.CARDS ||
-  type === IntegrationBlockType.CUSTOM_CURL;
+  type === IntegrationBlockType.CUSTOM_CURL ||
+  type === IntegrationBlockType.CUSTOM_LIST;
 
 export const blockHasItems = (block: Block): block is BlockWithItems =>
   "items" in block && block.items !== undefined && block.items !== null;

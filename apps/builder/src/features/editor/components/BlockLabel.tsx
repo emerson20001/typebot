@@ -88,6 +88,7 @@ export const getIntegrationBlockLabel = (
   ),
   [IntegrationBlockType.HTTP_REQUEST]: "HTTP request",
   [IntegrationBlockType.CUSTOM_CURL]: "Custom CURL",
+  [IntegrationBlockType.CUSTOM_LIST]: "Lista Customizada",
   [IntegrationBlockType.ZAPIER]: t("editor.sidebarBlock.zapier.label"),
   [IntegrationBlockType.MAKE_COM]: t("editor.sidebarBlock.makecom.label"),
   [IntegrationBlockType.PABBLY_CONNECT]: t("editor.sidebarBlock.pabbly.label"),

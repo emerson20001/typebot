@@ -179,7 +179,8 @@ const createItem = (
       block.items.splice(itemIndex, 0, newItem);
       return newItem;
     }
-    case IntegrationBlockType.CUSTOM_CURL: {
+    case IntegrationBlockType.CUSTOM_CURL:
+    case IntegrationBlockType.CUSTOM_LIST: {
       const baseItem = item as ButtonItem;
       const newItem = {
         ...baseItem,
@@ -233,7 +234,10 @@ export const duplicateItemDraft = (
     edges,
   }: {
     blockId: string;
-    blockType: BlockWithItems["type"] | IntegrationBlockType.CUSTOM_CURL;
+    blockType:
+      | BlockWithItems["type"]
+      | IntegrationBlockType.CUSTOM_CURL
+      | IntegrationBlockType.CUSTOM_LIST;
     edges: Edge[];
   },
 ): { newItem: Item; newEdges?: Edge[] } => {
@@ -275,7 +279,8 @@ export const duplicateItemDraft = (
       } satisfies ButtonItem;
       return { newItem, newEdges };
     }
-    case IntegrationBlockType.CUSTOM_CURL: {
+    case IntegrationBlockType.CUSTOM_CURL:
+    case IntegrationBlockType.CUSTOM_LIST: {
       const baseItem = item as ButtonItem;
       const newItem = {
         ...baseItem,
