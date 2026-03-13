@@ -142,7 +142,8 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
     });
   };
 
-  const updateQuickReplyButtonCount = (count: number) => {
+  const updateQuickReplyButtonCount = (count?: number) => {
+    if (typeof count !== "number") return;
     const normalizedCount = Math.max(0, Math.floor(count));
     const nextButtons = buildQuickReplyButtons(
       normalizedCount,
@@ -477,7 +478,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         </div>
       </Field.Root>
       <div className="flex items-center gap-2">
-        <Button variant="secondary" onClick={handleParse}>
+        <Button variant="secondary" onClick={() => handleParse()}>
           Parse CURL
         </Button>
         <Button variant="secondary" onClick={handleFillTestValues}>
@@ -494,7 +495,7 @@ export const CustomCurlSettings = ({ block, onOptionsChange }: Props) => {
         )}
       </div>
       {parseError && (
-        <Alert.Root variant="danger">
+        <Alert.Root variant="error">
           <Alert.Description>{parseError}</Alert.Description>
         </Alert.Root>
       )}

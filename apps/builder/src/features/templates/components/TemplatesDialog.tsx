@@ -1,5 +1,4 @@
 import { useTranslate } from "@tolgee/react";
-import { sendRequest } from "@typebot.io/lib/utils";
 import { Standard } from "@typebot.io/react";
 import type { Typebot } from "@typebot.io/typebot/schemas/typebot";
 import { Badge } from "@typebot.io/ui/components/Badge";
@@ -36,16 +35,40 @@ export const TemplatesDialog = ({
     async (template: TemplateProps) => {
       if (!workspace?.id) return;
       setSelectedTemplate(template);
-      const { data, error } = await sendRequest(
-        `/templates/${template.fileName}`,
-      );
-      if (error)
+      const templateUrl = `/templates/${template.fileName}`;
+
+      const response = await fetch(templateUrl, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      }).catch(() => undefined);
+
+      if (!response || !response.ok) {
         return toast({
-          title: error.name,
-          description: error.message,
+          title: "Template request failed",
+          description: `Could not fetch ${template.fileName}`,
         });
+      }
+
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        return toast({
+          title: "Invalid template response",
+          description: `Expected JSON for ${template.fileName}, got ${contentType || "unknown content type"}`,
+        });
+      }
+
+      const data = (await response.json().catch(() => undefined)) as
+        | Typebot
+        | undefined;
+      if (!data) {
+        return toast({
+          title: "Invalid template JSON",
+          description: `Could not parse ${template.fileName}`,
+        });
+      }
+
       setTypebot({
-        ...(data as Typebot),
+        ...data,
         name: template.name,
         workspaceId: workspace.id,
       });

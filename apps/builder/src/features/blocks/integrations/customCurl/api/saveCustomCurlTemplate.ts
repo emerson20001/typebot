@@ -22,6 +22,18 @@ const quickReplyButtonSchema = z.object({
 });
 
 const customCurlTemplateTypeSchema = z.enum(customCurlTemplateTypeLabels);
+type CustomCurlTemplateDbType =
+  | "Text"
+  | "Media"
+  | "ListPicker"
+  | "CallToAction"
+  | "QuickReply"
+  | "Card"
+  | "Catalog"
+  | "Carousel"
+  | "WhatsAppCard"
+  | "Authentication"
+  | "Flows";
 
 export const saveCustomCurlTemplate = authenticatedProcedure
   .meta({
@@ -148,7 +160,7 @@ export const saveCustomCurlTemplate = authenticatedProcedure
 
 const templateTypeDbValueByLabel: Record<
   (typeof customCurlTemplateTypeLabels)[number],
-  string
+  CustomCurlTemplateDbType
 > = {
   Text: "Text",
   Media: "Media",
@@ -182,7 +194,7 @@ const templateTypeLabelByDbValue: Record<
 
 const mapTemplateTypeToDbValue = (
   value: (typeof customCurlTemplateTypeLabels)[number],
-) => templateTypeDbValueByLabel[value] ?? "Text";
+): CustomCurlTemplateDbType => templateTypeDbValueByLabel[value] ?? "Text";
 
 const mapTemplateTypeToLabel = (value: string) =>
   templateTypeLabelByDbValue[value] ?? "Text";

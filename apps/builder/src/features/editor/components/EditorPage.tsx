@@ -1,4 +1,5 @@
 import { LoaderCircleIcon } from "@typebot.io/ui/icons/LoaderCircleIcon";
+import { useEffect } from "react";
 import { Seo } from "@/components/Seo";
 import { Graph } from "@/features/graph/components/Graph";
 import { GraphDndProvider } from "@/features/graph/providers/GraphDndProvider";
@@ -15,6 +16,10 @@ import { BlocksSideBar } from "./BlocksSideBar";
 import { SuspectedTypebotBanner } from "./SuspectedTypebotBanner";
 import { TypebotHeader } from "./TypebotHeader";
 
+const CONTEXT_REQUEST_MESSAGE = "chatwoot-custom-menu:fetch-context";
+const CONTEXT_EVENT = "chatwoot:custom-menu-context";
+const IFRAME_CONTEXT_TIMEOUT_MS = 1200;
+
 export const EditorPage = () => {
   const { typebot, currentUserMode } = useTypebot();
   const { workspace } = useWorkspace();
@@ -24,6 +29,76 @@ export const EditorPage = () => {
   );
 
   const isSuspicious = typebot?.riskLevel === 100 && !workspace?.isVerified;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const verifyChatwootParentContext = () =>
+      new Promise<boolean>((resolve) => {
+        if (window.self === window.top) {
+          resolve(false);
+          return;
+        }
+
+        let settled = false;
+        const done = (result: boolean) => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener("message", onMessage);
+          window.clearTimeout(timeoutId);
+          resolve(result);
+        };
+
+        const parseMessage = (data: unknown): { event?: string } | null => {
+          if (typeof data === "string") {
+            try {
+              return JSON.parse(data) as { event?: string };
+            } catch {
+              return null;
+            }
+          }
+
+          if (!data || typeof data !== "object") return null;
+          return data as { event?: string };
+        };
+
+        const onMessage = (event: MessageEvent) => {
+          const parsed = parseMessage(event.data);
+          if (parsed?.event === CONTEXT_EVENT) {
+            done(true);
+          }
+        };
+
+        window.addEventListener("message", onMessage);
+        const timeoutId = window.setTimeout(
+          () => done(false),
+          IFRAME_CONTEXT_TIMEOUT_MS,
+        );
+        window.parent?.postMessage(CONTEXT_REQUEST_MESSAGE, "*");
+      });
+
+    const enforceIframeSessionGuard = async () => {
+      const hasChatwootContext = await verifyChatwootParentContext();
+      if (hasChatwootContext) return;
+
+      const response = await fetch("/api/chatwoot/typebot-autologin", {
+        method: "DELETE",
+        headers: { "X-Typebot-Iframe-Guard": "1" },
+      });
+      if (!response.ok) return;
+
+      const data = (await response.json()) as {
+        shouldRedirect?: boolean;
+        signinPath?: string;
+      };
+
+      if (data.shouldRedirect && data.signinPath) {
+        window.location.replace(data.signinPath);
+      }
+    };
+
+    void enforceIframeSessionGuard().catch(() => undefined);
+  }, []);
 
   return (
     <EditorProvider>

@@ -10,10 +10,12 @@ x-typebot-common: &typebot-common
   env_file: .env
   environment:
     REDIS_URL: redis://typebot-redis:6379
+    CHOKIDAR_USEPOLLING: "true"
+    WATCHPACK_POLLING: "true"
 
 services:
   typebot-db:
-    image: postgres:16
+    image: postgres:15
     restart: always
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -45,15 +47,48 @@ services:
 
   typebot-builder:
     <<: *typebot-common
-    image: baptistearno/typebot-builder:latest
+    build:
+      context: .
+      target: base
+    working_dir: /app
+    command: >
+      /bin/sh -lc "
+      bun install;
+      if [ ! -f /app/node_modules/isolated-vm/out/isolated_vm.node ]; then
+        rm -rf /app/node_modules/isolated-vm;
+        bun install --force;
+      fi;
+      bunx turbo build --filter=@typebot.io/env;
+      ./node_modules/.bin/prisma migrate deploy --schema=packages/prisma/postgresql/schema.prisma;
+      bunx turbo dev --filter=builder
+      "
+    volumes:
+      - ./:/app
+      - typebot-node-modules:/app/node_modules
     ports:
-      - "8080:3000"
+      - "8090:3000"
 
   typebot-viewer:
     <<: *typebot-common
-    image: baptistearno/typebot-viewer:latest
+    build:
+      context: .
+      target: base
+    working_dir: /app
+    command: >
+      /bin/sh -lc "
+      bun install;
+      if [ ! -f /app/node_modules/isolated-vm/out/isolated_vm.node ]; then
+        rm -rf /app/node_modules/isolated-vm;
+        bun install --force;
+      fi;
+      bunx turbo build --filter=@typebot.io/env;
+      bunx turbo dev --filter=viewer
+      "
+    volumes:
+      - ./:/app
+      - typebot-node-modules:/app/node_modules
     ports:
-      - "8081:3000"
+      - "8091:3001"
 
 networks:
   typebot-network:
@@ -62,3 +97,4 @@ networks:
 volumes:
   db-data:
   redis-data:
+  typebot-node-modules:

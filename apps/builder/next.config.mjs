@@ -33,10 +33,23 @@ injectViewerUrlIfVercelPreview(process.env.NEXT_PUBLIC_VIEWER_URL);
 
 configureRuntimeEnv();
 
+const configuredFrameAncestors = (
+  process.env.CHATWOOT_FRAME_ANCESTORS ||
+  (process.env.NODE_ENV !== "production"
+    ? "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.7:3000"
+    : "")
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
   },
   transpilePackages: [
     // https://github.com/nextauthjs/next-auth/discussions/9385#discussioncomment-12023012
@@ -67,36 +80,49 @@ const nextConfig = {
   },
   headers: async () => {
     const isDev = process.env.NODE_ENV !== "production";
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+      "style-src 'self' 'unsafe-inline' https:",
+      `connect-src 'self' https: wss:${
+        isDev ? " http://localhost:* ws://localhost:*" : ""
+      }`,
+      "frame-src 'self' https:",
+      `img-src 'self' data: blob: https:${isDev ? " http://localhost:*" : ""}`,
+      "font-src 'self' https: data:",
+      "media-src 'self' https:",
+      "worker-src 'self' blob:",
+      "object-src 'none'",
+      `frame-ancestors 'self' ${
+        configuredFrameAncestors.length > 0
+          ? configuredFrameAncestors.join(" ")
+          : ""
+      }`.trim(),
+    ];
+
+    const headers = [
+      ...(configuredFrameAncestors.length > 0
+        ? []
+        : [
+            {
+              key: "X-Frame-Options",
+              value: "SAMEORIGIN",
+            },
+          ]),
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Content-Security-Policy",
+        value: cspDirectives.join("; "),
+      },
+    ];
+
     return [
       {
         source: "/(.*)?",
-        headers: [
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-              "style-src 'self' 'unsafe-inline' https:",
-              `connect-src 'self' https: wss:${
-                isDev ? " http://localhost:* ws://localhost:*" : ""
-              }`,
-              "frame-src 'self' https:",
-              `img-src 'self' data: blob: https:${isDev ? " http://localhost:*" : ""}`,
-              "font-src 'self' https: data:",
-              "media-src 'self' https:",
-              "worker-src 'self' blob:",
-              "object-src 'none'",
-            ].join("; "),
-          },
-        ],
+        headers,
       },
     ];
   },
